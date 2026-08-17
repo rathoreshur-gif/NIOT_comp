@@ -1,0 +1,435 @@
+<?xml version="1.0"?>
+<sdf version="1.8" xmlns:gz="http://gazebosim.org/sdf">
+<world name="underwater_pool">
+
+  <physics name="1ms" type="ode">
+    <max_step_size>0.001</max_step_size>
+    <real_time_factor>3</real_time_factor>
+    <ode>
+      <solver>
+        <type>quick</type>
+        <iters>50</iters>
+        <sor>1.3</sor>
+      </solver>
+      <constraints>
+        <cfm>0.0</cfm>
+        <erp>0.2</erp>
+        <contact_max_correcting_vel>0.1</contact_max_correcting_vel>
+        <contact_surface_layer>0.001</contact_surface_layer>
+      </constraints>
+    </ode>
+  </physics>
+
+  <plugin filename="ignition-gazebo-physics-system" name="ignition::gazebo::systems::Physics"/>
+  <plugin filename="ignition-gazebo-user-commands-system" name="ignition::gazebo::systems::UserCommands"/>
+  <plugin filename="ignition-gazebo-scene-broadcaster-system" name="ignition::gazebo::systems::SceneBroadcaster"/>
+  <plugin filename="ignition-gazebo-contact-system" name="ignition::gazebo::systems::Contact"/>
+
+  <plugin filename="ignition-gazebo-buoyancy-system" name="ignition::gazebo::systems::Buoyancy">
+    <graded_buoyancy>
+      <default_density>1025</default_density>
+      <density_change>
+        <above_depth>0</above_depth>
+        <density>1.2</density>
+      </density_change>
+    </graded_buoyancy>
+  </plugin>
+
+  <plugin filename="ignition-gazebo-imu-system" name="ignition::gazebo::systems::Imu"/>
+  <plugin filename="ignition-gazebo-sensors-system" name="ignition::gazebo::systems::Sensors">
+    <render_engine>ogre2</render_engine>
+  </plugin>
+  <plugin filename="ignition-gazebo-apply-link-wrench-system" name="ignition::gazebo::systems::ApplyLinkWrench"/>
+
+  <gui fullscreen="0">
+    <plugin filename="GzScene3D" name="3D View">
+      <ignition-gui>
+        <title>3D View</title>
+        <property type="bool" key="showTitleBar">false</property>
+        <property type="string" key="state">docked</property>
+      </ignition-gui>
+      <engine>ogre2</engine>
+      <scene>scene</scene>
+      <ambient_light>0.04 0.10 0.14</ambient_light>
+      <background_color>0.01 0.06 0.10</background_color>
+      <camera_pose>-20 0 6 0 0.4 0</camera_pose>
+      <camera_tracking>
+        <target>auv</target>
+        <mode>follow</mode>
+        <track_position>true</track_position>
+        <track_orientation>false</track_orientation>
+        <static_offset>-5 3 2</static_offset>
+      </camera_tracking>
+    </plugin>
+    <plugin filename="WorldControl" name="World control">
+      <ignition-gui>
+        <title>World control</title>
+        <property type="bool" key="showTitleBar">false</property>
+        <property type="bool" key="resizable">false</property>
+        <property type="double" key="height">72</property>
+        <property type="double" key="width">121</property>
+        <property type="double" key="z">1</property>
+        <property type="string" key="state">floating</property>
+        <anchors target="3D View">
+          <line own="left" target="left"/>
+          <line own="bottom" target="bottom"/>
+        </anchors>
+      </ignition-gui>
+      <play_pause>true</play_pause>
+      <step>true</step>
+      <start_paused>true</start_paused>
+    </plugin>
+    <plugin filename="WorldStats" name="World stats">
+      <ignition-gui>
+        <title>World stats</title>
+        <property type="bool" key="showTitleBar">false</property>
+        <property type="bool" key="resizable">false</property>
+        <property type="double" key="height">110</property>
+        <property type="double" key="width">290</property>
+        <property type="double" key="z">1</property>
+        <property type="string" key="state">floating</property>
+        <anchors target="3D View">
+          <line own="right" target="right"/>
+          <line own="bottom" target="bottom"/>
+        </anchors>
+      </ignition-gui>
+      <sim_time>true</sim_time>
+      <real_time>true</real_time>
+      <real_time_factor>true</real_time_factor>
+      <iterations>true</iterations>
+    </plugin>
+    <plugin filename="KeyPublisher" name="Key Publisher"/>
+  </gui>
+
+  <gravity>0 0 -9.81</gravity>
+
+  <scene>
+    <ambient>0 0 0 1</ambient>
+    <background>0 0 0 1</background>
+    <shadows>false</shadows>
+    <grid>false</grid>
+  </scene>
+
+  <light type="directional" name="sun">
+    <cast_shadows>false</cast_shadows>
+    <pose>0 0 10 0 0 0</pose>
+    <diffuse>0.9 0.95 1.0 1</diffuse>
+    <specular>0.8 0.8 0.8 1</specular>
+    <attenuation>
+      <range>1000</range>
+      <constant>0.9</constant>
+      <linear>0.01</linear>
+      <quadratic>0.001</quadratic>
+    </attenuation>
+    <direction>-0.5 0.1 -0.9</direction>
+  </light>
+
+  <light type="point" name="underwater_light_north">
+    <cast_shadows>false</cast_shadows>
+    <pose>0 12 -1.5 0 0 0</pose>
+    <diffuse>0.4 0.8 1.0 1</diffuse>
+    <specular>0.2 0.5 0.8 1</specular>
+    <attenuation>
+      <range>15</range>
+      <constant>0.2</constant>
+      <linear>0.05</linear>
+      <quadratic>0.01</quadratic>
+    </attenuation>
+  </light>
+
+  <light type="point" name="underwater_light_south">
+    <cast_shadows>false</cast_shadows>
+    <pose>0 -12 -1.5 0 0 0</pose>
+    <diffuse>0.4 0.8 1.0 1</diffuse>
+    <specular>0.2 0.5 0.8 1</specular>
+    <attenuation>
+      <range>15</range>
+      <constant>0.2</constant>
+      <linear>0.05</linear>
+      <quadratic>0.01</quadratic>
+    </attenuation>
+  </light>
+
+  <light type="point" name="underwater_light_east">
+    <cast_shadows>false</cast_shadows>
+    <pose>12 0 -1.5 0 0 0</pose>
+    <diffuse>0.4 0.8 1.0 1</diffuse>
+    <specular>0.2 0.5 0.8 1</specular>
+    <attenuation>
+      <range>15</range>
+      <constant>0.2</constant>
+      <linear>0.05</linear>
+      <quadratic>0.01</quadratic>
+    </attenuation>
+  </light>
+
+  <light type="point" name="underwater_light_west">
+    <cast_shadows>false</cast_shadows>
+    <pose>-12 0 -1.5 0 0 0</pose>
+    <diffuse>0.4 0.8 1.0 1</diffuse>
+    <specular>0.2 0.5 0.8 1</specular>
+    <attenuation>
+      <range>15</range>
+      <constant>0.2</constant>
+      <linear>0.05</linear>
+      <quadratic>0.01</quadratic>
+    </attenuation>
+  </light>
+
+  <model name="pool_floor">
+    <static>true</static>
+    <pose>0 0 -3.05 0 0 0</pose>
+    <link name="floor">
+      <collision name="collision">
+        <geometry><box><size>25 25 0.1</size></box></geometry>
+        <surface>
+          <contact>
+            <ode>
+              <kp>500000</kp><kd>200</kd>
+              <max_vel>0.5</max_vel><min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>25 25 0.1</size></box></geometry>
+        <material>
+          <ambient>0.20 0.32 0.36 1</ambient>
+          <diffuse>0.28 0.42 0.48 1</diffuse>
+          <specular>0.08 0.12 0.14 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/pool_tile_lines2.png</albedo_map>
+              <normal_map>../media/textures/pool_tile_normal_tiled.png</normal_map>
+              <roughness>0.72</roughness>
+              <metalness>0.0</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_wall_north">
+    <static>true</static>
+    <pose>0 12.5 -1 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>25 0.2 4</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>25 0.2 4</size></box></geometry>
+        <material>
+          <ambient>0.30 0.42 0.46 1</ambient>
+          <diffuse>0.38 0.52 0.58 1</diffuse>
+          <specular>0.10 0.14 0.16 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/Poliigon_TilesCeramicWhite_6956_BaseColor.jpg</albedo_map>
+              <normal_map>../media/textures/Poliigon_TilesCeramicWhite_6956_Normal.png</normal_map>
+              <roughness_map>../media/textures/Poliigon_TilesCeramicWhite_6956_Roughness.jpg</roughness_map>
+              <metalness>0.0</metalness>
+              <scale>20.0 4.0</scale>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_wall_south">
+    <static>true</static>
+    <pose>0 -12.5 -1 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>25 0.2 4</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>25 0.2 4</size></box></geometry>
+        <material>
+          <ambient>0.30 0.42 0.46 1</ambient>
+          <diffuse>0.38 0.52 0.58 1</diffuse>
+          <specular>0.10 0.14 0.16 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/Poliigon_TilesCeramicWhite_6956_BaseColor.jpg</albedo_map>
+              <normal_map>../media/textures/Poliigon_TilesCeramicWhite_6956_Normal.png</normal_map>
+              <roughness_map>../media/textures/Poliigon_TilesCeramicWhite_6956_Roughness.jpg</roughness_map>
+              <metalness>0.0</metalness>
+              <scale>20.0 4.0</scale>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_wall_east">
+    <static>true</static>
+    <pose>12.5 0 -1 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>0.2 25 4</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.2 25 4</size></box></geometry>
+        <material>
+          <ambient>0.30 0.42 0.46 1</ambient>
+          <diffuse>0.38 0.52 0.58 1</diffuse>
+          <specular>0.10 0.14 0.16 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/Poliigon_TilesCeramicWhite_6956_BaseColor.jpg</albedo_map>
+              <normal_map>../media/textures/Poliigon_TilesCeramicWhite_6956_Normal.png</normal_map>
+              <roughness_map>../media/textures/Poliigon_TilesCeramicWhite_6956_Roughness.jpg</roughness_map>
+              <metalness>0.0</metalness>
+              <scale>20.0 4.0</scale>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_wall_west">
+    <static>true</static>
+    <pose>-12.5 0 -1 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>0.2 25 4</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.2 25 4</size></box></geometry>
+        <material>
+          <ambient>0.30 0.42 0.46 1</ambient>
+          <diffuse>0.38 0.52 0.58 1</diffuse>
+          <specular>0.10 0.14 0.16 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/Poliigon_TilesCeramicWhite_6956_BaseColor.jpg</albedo_map>
+              <normal_map>../media/textures/Poliigon_TilesCeramicWhite_6956_Normal.png</normal_map>
+              <roughness_map>../media/textures/Poliigon_TilesCeramicWhite_6956_Roughness.jpg</roughness_map>
+              <metalness>0.0</metalness>
+              <scale>20.0 4.0</scale>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="water_surface">
+    <static>true</static>
+    <pose>0 0 0.3 0 0 0</pose>
+    <link name="surface">
+      <collision name="collision">
+        <geometry>
+          <box><size>25 25 0.1</size></box>
+        </geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.0</mu><mu2>0.0</mu2></ode></friction>
+        </surface>
+      </collision>
+    </link>
+  </model>
+
+  <model name="water_surface_texture">
+    <static>true</static>
+    <pose>0 0 0 0 0 0</pose>
+    <link name="surface">
+      <visual name="visual">
+        <cast_shadows>false</cast_shadows>
+        <transparency>0.30</transparency>
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>25 25</size>
+          </plane>
+        </geometry>
+        <material>
+          <ambient>0.30 0.62 0.78 0.70</ambient>
+          <diffuse>0.35 0.68 0.82 0.70</diffuse>
+          <specular>0.90 0.92 0.95 0.70</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/water_water_0051_01.jpg</albedo_map>
+              <normal_map>../media/textures/water_normal.png</normal_map>
+              <roughness>0.08</roughness>
+              <metalness>0.02</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <include>
+    <uri>model://m7urdfnew_sdf_package</uri>
+    <name>auv</name>
+    <pose>-7.980710 -0.000320 -1.023955 0 0 0</pose>
+  </include>
+
+  <include>
+    <uri>model://rs2026_bin_urdf</uri>
+    <name>task</name>
+    <pose>0 0 -6 0 0 0</pose>
+  </include>
+
+  <!-- ============================================================
+       WATER TINT — the body of water itself.
+
+       Gazebo Harmonic's renderer has no fog. The <fog> block up in
+       <scene> is valid SDF but gz-rendering 8 never reads it - there
+       is not one fog symbol in the library - which is why the pool
+       volume used to look exactly like the air above it.
+
+       So the water gets drawn: one double-sided translucent box
+       filling the pool interior. From the deck the pool now reads as
+       full; from inside it tints the walls, floor and surface beyond
+       it. Visual only - no collision, no shadow - and inset 3 cm from
+       every surface so no two faces end up coplanar and z-fighting.
+
+       This is a flat tint, not distance haze: real depth attenuation
+       needs stacked translucent slices, which cost fill rate on every
+       AUV camera. Raise <transparency> toward 1.0 for clearer water,
+       lower it for murkier.
+       ============================================================ -->
+  <model name="water_tint">
+    <static>true</static>
+    <pose>0 0 -1.5 0 0 0</pose>
+    <link name="volume">
+      <visual name="visual">
+        <cast_shadows>false</cast_shadows>
+        <transparency>0.62</transparency>
+        <geometry><box><size>24.74 24.74 2.94</size></box></geometry>
+        <material>
+          <double_sided>true</double_sided>
+          <lighting>false</lighting>
+          <ambient>0.05 0.34 0.40 1</ambient>
+          <diffuse>0.05 0.34 0.40 1</diffuse>
+          <specular>0 0 0 1</specular>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+</world>
+</sdf>

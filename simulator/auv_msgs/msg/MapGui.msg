@@ -1,0 +1,15 @@
+float32[3] cur_loc
+string[] detection_keys
+float64[] detection_times
+string[] detection_names
+float32[] detection_x
+float32[] detection_y
+float32[] detection_z
+float32[] detection_confidences
+string[] cluster_keys
+float32[] cluster_scores
+float32[] cluster_center_x
+float32[] cluster_center_y
+float32[] cluster_center_z
+int32[] cluster_points
+float32 dist_thresh

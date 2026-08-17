@@ -1,0 +1,6 @@
+auv_msgs/Pose pose
+float64 xy_tolerance
+float64 z_tolerance
+float64 angle_tolerance
+---
+int64 service_id

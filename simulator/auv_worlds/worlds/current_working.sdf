@@ -1,0 +1,366 @@
+<?xml version="1.0"?>
+<sdf version="1.8" xmlns:gz="http://gazebosim.org/sdf">
+<world name="underwater_pool">
+
+  <!-- ==============================================================
+       CHANGE 1 — RTF raised from 0.5 → 1.0
+       ==============================================================
+       step_size 0.0005 → 0.001 s keeps the same wall-clock CPU cost
+       (1000 physics steps/sec) while allowing the simulation to run
+       at real-time speed.
+
+       The 5× roll-damping boost in the original was a band-aid for
+       RTF=0.5 making the control loop lag behind; at RTF=1.0 that
+       boost is physically incorrect and has been reverted (CHANGE 3).
+       ============================================================== -->
+  <physics name="1ms" type="ode">
+    <max_step_size>0.001</max_step_size>     <!-- CHANGE 1: was 0.0005 -->
+    <real_time_factor>1.0</real_time_factor>  <!-- CHANGE 1: was 0.5   -->
+    <ode>
+      <solver>
+        <type>quick</type>
+        <iters>50</iters>
+        <sor>1.3</sor>
+      </solver>
+      <constraints>
+        <cfm>0.0</cfm>
+        <erp>0.2</erp>
+        <contact_max_correcting_vel>0.1</contact_max_correcting_vel>
+        <contact_surface_layer>0.001</contact_surface_layer>
+      </constraints>
+    </ode>
+  </physics>
+
+
+  <!-- ==============================================================
+       WORLD PLUGINS
+       ============================================================== -->
+
+  <plugin filename="ignition-gazebo-physics-system"
+          name="ignition::gazebo::systems::Physics"/>
+
+  <plugin filename="ignition-gazebo-user-commands-system"
+          name="ignition::gazebo::systems::UserCommands"/>
+
+  <plugin filename="ignition-gazebo-scene-broadcaster-system"
+          name="ignition::gazebo::systems::SceneBroadcaster"/>
+
+  <plugin filename="ignition-gazebo-contact-system"
+          name="ignition::gazebo::systems::Contact"/>
+
+  <!-- ==============================================================
+       BUOYANCY — Graded two-fluid model (unchanged)
+       z < 0  →  seawater at 1025 kg/m³
+       z > 0  →  air      at   1.2 kg/m³
+       Net upward force on fully-submerged AUV ≈ +6.4 N
+       ============================================================== -->
+  <plugin filename="ignition-gazebo-buoyancy-system"
+          name="ignition::gazebo::systems::Buoyancy">
+    <graded_buoyancy>
+      <default_density>1025</default_density>
+      <density_change>
+        <above_depth>0</above_depth>
+        <density>1.2</density>
+      </density_change>
+    </graded_buoyancy>
+  </plugin>
+
+  <!-- ==============================================================
+       CHANGE 4 — IMU system plugin
+       ==============================================================
+       Required to activate <sensor type="imu"> inside the AUV model.
+       Old file subscribed to /model/auv/imu but never declared the
+       sensor → topic was silently empty.
+       ============================================================== -->
+  <plugin filename="ignition-gazebo-imu-system"
+          name="ignition::gazebo::systems::Imu"/>   <!-- CHANGE 4: new -->
+
+  <plugin filename="ignition-gazebo-sensors-system"
+          name="ignition::gazebo::systems::Sensors">
+    <render_engine>ogre2</render_engine>
+  </plugin>
+
+  <!-- ==============================================================
+       ApplyLinkWrench
+       ⚠️  Forces MUST be in WORLD frame before publishing.
+           f_world = R(q).apply(f_body)
+           t_world = R(q).apply(t_body)
+       Topic: /world/underwater_pool/wrench/persistent
+       ============================================================== -->
+  <plugin filename="ignition-gazebo-apply-link-wrench-system"
+          name="ignition::gazebo::systems::ApplyLinkWrench"/>
+
+
+  <!-- ==============================================================
+       GUI
+       ============================================================== -->
+  <gui fullscreen="0">
+
+    <plugin filename="GzScene3D" name="3D View">
+      <ignition-gui>
+        <title>3D View</title>
+        <property type="bool"   key="showTitleBar">false</property>
+        <property type="string" key="state">docked</property>
+      </ignition-gui>
+      <engine>ogre2</engine>
+      <scene>scene</scene>
+      <ambient_light>0.1 0.2 0.3</ambient_light>
+      <background_color>0.0 0.2 0.4</background_color>
+      <camera_pose>-3 0 -2 0 0.1 0</camera_pose>
+    </plugin>
+
+    <plugin filename="WorldControl" name="World control">
+      <ignition-gui>
+        <title>World control</title>
+        <property type="bool"   key="showTitleBar">false</property>
+        <property type="bool"   key="resizable">false</property>
+        <property type="double" key="height">72</property>
+        <property type="double" key="width">121</property>
+        <property type="double" key="z">1</property>
+        <property type="string" key="state">floating</property>
+        <anchors target="3D View">
+          <line own="left"   target="left"/>
+          <line own="bottom" target="bottom"/>
+        </anchors>
+      </ignition-gui>
+      <play_pause>true</play_pause>
+      <step>true</step>
+      <start_paused>true</start_paused>
+    </plugin>
+
+    <plugin filename="WorldStats" name="World stats">
+      <ignition-gui>
+        <title>World stats</title>
+        <property type="bool"   key="showTitleBar">false</property>
+        <property type="bool"   key="resizable">false</property>
+        <property type="double" key="height">110</property>
+        <property type="double" key="width">290</property>
+        <property type="double" key="z">1</property>
+        <property type="string" key="state">floating</property>
+        <anchors target="3D View">
+          <line own="right"  target="right"/>
+          <line own="bottom" target="bottom"/>
+        </anchors>
+      </ignition-gui>
+      <sim_time>true</sim_time>
+      <real_time>true</real_time>
+      <real_time_factor>true</real_time_factor>
+      <iterations>true</iterations>
+    </plugin>
+
+  </gui>
+
+
+  <!-- ==============================================================
+       ENVIRONMENT
+       ============================================================== -->
+  <gravity>0 0 -9.81</gravity>
+
+  <scene>
+    <ambient>0.1 0.2 0.3 1.0</ambient>
+    <background>0.0 0.2 0.4 1.0</background>
+    <grid>false</grid>
+  </scene>
+
+  <light type="directional" name="sun">
+    <cast_shadows>true</cast_shadows>
+    <pose>0 0 10 0 0 0</pose>
+    <diffuse>0.5 0.6 0.7 1</diffuse>
+    <specular>0.3 0.3 0.4 1</specular>
+    <attenuation>
+      <range>1000</range>
+      <constant>0.9</constant>
+      <linear>0.01</linear>
+      <quadratic>0.001</quadratic>
+    </attenuation>
+    <direction>-0.5 0.1 -0.9</direction>
+  </light>
+
+
+  <!-- ==============================================================
+       POOL STRUCTURE  (±10 m X/Y, floor at z=−10 m, walls 12 m tall)
+       ============================================================== -->
+
+  <model name="pool_floor">
+    <static>true</static>
+    <pose>0 0 -10.05 0 0 0</pose>
+    <link name="floor">
+      <collision name="collision">
+        <geometry><box><size>20 20 0.1</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>20 20 0.1</size></box></geometry>
+        <material>
+          <ambient>0.2 0.3 0.25 1</ambient>
+          <diffuse>0.3 0.4 0.35 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_wall_north">
+    <static>true</static><pose>0 10 -5 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>20 0.2 12</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>20 0.2 12</size></box></geometry>
+        <material><ambient>0.3 0.4 0.5 0.8</ambient><diffuse>0.4 0.5 0.6 0.8</diffuse></material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_wall_south">
+    <static>true</static><pose>0 -10 -5 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>20 0.2 12</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>20 0.2 12</size></box></geometry>
+        <material><ambient>0.3 0.4 0.5 0.8</ambient><diffuse>0.4 0.5 0.6 0.8</diffuse></material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_wall_east">
+    <static>true</static><pose>10 0 -5 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>0.2 20 12</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.2 20 12</size></box></geometry>
+        <material><ambient>0.3 0.4 0.5 0.8</ambient><diffuse>0.4 0.5 0.6 0.8</diffuse></material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_wall_west">
+    <static>true</static><pose>-10 0 -5 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>0.2 20 12</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.2 20 12</size></box></geometry>
+        <material><ambient>0.3 0.4 0.5 0.8</ambient><diffuse>0.4 0.5 0.6 0.8</diffuse></material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- Water surface ceiling — safety barrier to prevent vehicle from surfacing.
+       Positioned at z=5 (well above normal operational range) so it doesn't
+       interfere with heave control. Only engages if vehicle escapes upward.
+       Also provides roll/pitch damping if vehicle ventures near upper zone. -->
+ <!-- water surface: box instead of plane, at z=0.1 so bottom face is at z=0.05 -->
+<model name="water_surface">
+  <static>true</static>
+  <pose>0 0 0.3 0 0 0</pose>
+  <link name="surface">
+    <collision name="collision">
+      <geometry>
+        <box><size>20 20 0.1</size></box>
+      </geometry>
+      <surface>
+        <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact>
+        <friction><ode><mu>0.0</mu><mu2>0.0</mu2></ode></friction>
+      </surface>
+    </collision>
+  </link>
+</model>
+
+
+  <!-- ==============================================================
+       AUV MODEL
+       ==============================================================
+       Mass: 42.0 kg (deployed weight including batteries + payload).
+         SolidWorks URDF reports 37.86 kg for hull only (no battery
+         hull — as per the model folder name). 42 kg used here.
+
+       Inertia: solid-cylinder approximation (L=1.5 m, r=0.045 m).
+         Note: URDF inertia tensor from SolidWorks is not used because
+         the exported COM (0.678, 0.855, 1.260) lies outside the mesh
+         bounding box, indicating an axis-convention mismatch in the
+         exporter. Update with verified values once CAD origin is fixed.
+
+       Buoyancy collision box: deliberately oversized to model syntactic
+         foam buoyancy aids fitted to the real vehicle:
+           Volume = 1.5 × 0.1665 × 0.1665 = 0.04159 m³
+           Net upward = (1025 × 9.81 × 0.04159) − (42 × 9.81) ≈ +6.4 N
+
+       CB offset: 0.005 m above CG (original value kept).
+         Righting moment ≈ 418 × 0.005 × sin(θ) ≈ 2.1 N·m.
+         Gentle enough to not fight intentional roll/pitch manoeuvres.
+
+       Spawn at z = −1 m (fully submerged, avoids graded-buoyancy spike).
+       ============================================================== -->
+  <include>
+    <uri>model://auv</uri>
+    <name>auv</name>
+    <pose>-9 0 -0.5 0 0 0</pose>
+  </include>
+
+
+  <!-- ============================================================
+       WATER TINT — the body of water itself.
+
+       Gazebo Harmonic's renderer has no fog. The <fog> block up in
+       <scene> is valid SDF but gz-rendering 8 never reads it - there
+       is not one fog symbol in the library - which is why the pool
+       volume used to look exactly like the air above it.
+
+       So the water gets drawn: one double-sided translucent box
+       filling the pool interior. From the deck the pool now reads as
+       full; from inside it tints the walls, floor and surface beyond
+       it. Visual only - no collision, no shadow - and inset 3 cm from
+       every surface so no two faces end up coplanar and z-fighting.
+
+       This is a flat tint, not distance haze: real depth attenuation
+       needs stacked translucent slices, which cost fill rate on every
+       AUV camera. Raise <transparency> toward 1.0 for clearer water,
+       lower it for murkier.
+       ============================================================ -->
+  <model name="water_tint">
+    <static>true</static>
+    <pose>0 0 -5 0 0 0</pose>
+    <link name="volume">
+      <visual name="visual">
+        <cast_shadows>false</cast_shadows>
+        <transparency>0.62</transparency>
+        <geometry><box><size>19.74 19.74 9.94</size></box></geometry>
+        <material>
+          <double_sided>true</double_sided>
+          <lighting>false</lighting>
+          <ambient>0.05 0.34 0.40 1</ambient>
+          <diffuse>0.05 0.34 0.40 1</diffuse>
+          <specular>0 0 0 1</specular>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+</world>
+</sdf>

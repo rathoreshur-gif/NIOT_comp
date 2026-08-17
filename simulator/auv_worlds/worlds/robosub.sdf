@@ -1,0 +1,690 @@
+<?xml version="1.0"?>
+<!--
+  RoboSub 2026 — Competition World (v2)
+  25 m × 25 m pool, depth 3 m
+
+  Coordinate frame: ENU / REP-105
+    +X  forward (AUV travel direction, toward north wall)
+    +Y  lateral left
+    +Z  up (out of water)
+    origin: water surface at AUV start position
+
+  Pool geometry
+    Length  : 25 m  (X: -1 → 24)
+    Width   : 25 m  (Y: -12.5 → +12.5)
+    Depth   : 3 m   → floor at Z = -3
+
+  Task positions (from competition sketch)
+    AUV start   X =  0.0  (behind gate, at world origin)
+    Task 1 Gate X =  3.0
+    Task 2 Slalom     X =  9.5 – 11.3  (right side Y ≈ -4.5)
+    Task 3 Bins       X = 17.0          (right side Y ≈ -5.0)
+    Task 4 Torpedoes  X = 16.0          (left side  Y ≈ +5.0)
+    Task 5 Octagon    X = 22.0          (left-centre Y ≈ +2.0)
+-->
+<sdf version="1.8" xmlns:gz="http://gazebosim.org/sdf">
+<world name="underwater_pool">
+
+  <!-- ============================================================
+       PHYSICS
+       ============================================================ -->
+  <!-- 2 ms / 20 iters rather than 1 ms / 50. Measured ~1.7x RTF for no visible
+       change in behaviour. Do not push the step to 4 ms: that destabilises the
+       buoyancy/hydrodynamics solve, and the extra contact work made RTF worse
+       than the 1 ms baseline. -->
+  <physics name="2ms" type="ode">
+    <max_step_size>0.002</max_step_size>
+    <real_time_factor>1.0</real_time_factor>
+    <ode>
+      <solver>
+        <type>quick</type>
+        <iters>20</iters>
+        <sor>1.3</sor>
+      </solver>
+      <constraints>
+        <cfm>0.0</cfm>
+        <erp>0.2</erp>
+        <contact_max_correcting_vel>0.1</contact_max_correcting_vel>
+        <contact_surface_layer>0.001</contact_surface_layer>
+      </constraints>
+    </ode>
+  </physics>
+
+  <!-- ============================================================
+       PLUGINS
+       ============================================================ -->
+  <plugin filename="ignition-gazebo-physics-system"
+          name="ignition::gazebo::systems::Physics"/>
+
+  <plugin filename="ignition-gazebo-user-commands-system"
+          name="ignition::gazebo::systems::UserCommands"/>
+
+  <plugin filename="ignition-gazebo-scene-broadcaster-system"
+          name="ignition::gazebo::systems::SceneBroadcaster"/>
+
+  <plugin filename="ignition-gazebo-contact-system"
+          name="ignition::gazebo::systems::Contact"/>
+
+  <!-- Graded buoyancy: seawater (1025 kg/m³) below Z=0, air (1.2 kg/m³) above -->
+  <plugin filename="ignition-gazebo-buoyancy-system"
+          name="ignition::gazebo::systems::Buoyancy">
+    <graded_buoyancy>
+      <default_density>1025</default_density>
+      <density_change>
+        <above_depth>0</above_depth>
+        <density>1.2</density>
+      </density_change>
+    </graded_buoyancy>
+  </plugin>
+
+  <plugin filename="ignition-gazebo-imu-system"
+          name="ignition::gazebo::systems::Imu"/>
+
+  <plugin filename="ignition-gazebo-sensors-system"
+          name="ignition::gazebo::systems::Sensors">
+    <render_engine>ogre2</render_engine>
+  </plugin>
+
+  <!-- ============================================================
+       GUI
+       ============================================================ -->
+  <gui fullscreen="0">
+
+    <plugin filename="GzScene3D" name="3D View">
+      <ignition-gui>
+        <title>3D View</title>
+        <property type="bool"   key="showTitleBar">false</property>
+        <property type="string" key="state">docked</property>
+      </ignition-gui>
+      <engine>ogre2</engine>
+      <scene>scene</scene>
+      <ambient_light>0.30 0.48 0.58</ambient_light>
+      <background_color>0.08 0.30 0.42</background_color>
+      <camera_pose>-20 0 6 0 0.4 0</camera_pose>
+      <camera_tracking>
+        <static_offset>-2 2 1 0 0 0</static_offset>
+      </camera_tracking>
+    </plugin>
+
+    <plugin filename="WorldControl" name="World control">
+      <ignition-gui>
+        <title>World control</title>
+        <property type="bool"   key="showTitleBar">false</property>
+        <property type="bool"   key="resizable">false</property>
+        <property type="double" key="height">72</property>
+        <property type="double" key="width">121</property>
+        <property type="double" key="z">1</property>
+        <property type="string" key="state">floating</property>
+        <anchors target="3D View">
+          <line own="left"   target="left"/>
+          <line own="bottom" target="bottom"/>
+        </anchors>
+      </ignition-gui>
+      <play_pause>true</play_pause>
+      <step>true</step>
+      <start_paused>true</start_paused>
+    </plugin>
+
+    <plugin filename="WorldStats" name="World stats">
+      <ignition-gui>
+        <title>World stats</title>
+        <property type="bool"   key="showTitleBar">false</property>
+        <property type="bool"   key="resizable">false</property>
+        <property type="double" key="height">110</property>
+        <property type="double" key="width">290</property>
+        <property type="double" key="z">1</property>
+        <property type="string" key="state">floating</property>
+        <anchors target="3D View">
+          <line own="right"  target="right"/>
+          <line own="bottom" target="bottom"/>
+        </anchors>
+      </ignition-gui>
+      <sim_time>true</sim_time>
+      <real_time>true</real_time>
+      <real_time_factor>true</real_time_factor>
+      <iterations>true</iterations>
+    </plugin>
+
+    <plugin filename="KeyPublisher" name="Key Publisher"/>
+
+    <!-- Hold-to-move keyboard teleop. Lives in auv_gui; the launch file puts
+         that package's lib directory on GZ_GUI_PLUGIN_PATH so Gazebo can find
+         it. This panel is what makes hold-to-move work: it watches the main
+         window for key press AND release and publishes the held set, which
+         Gazebo's own KeyPublisher cannot do. Named AuvTeleop because gz-gui
+         ships an unrelated plugin called Teleop. -->
+    <plugin filename="AuvTeleop" name="AuvTeleop">
+      <gz-gui>
+        <title>Teleop</title>
+        <property type="bool" key="showTitleBar">true</property>
+        <property type="string" key="state">docked</property>
+      </gz-gui>
+      <status_topic>/teleop/status</status_topic>
+      <command_topic>/teleop/command</command_topic>
+      <keys_topic>/teleop/keys</keys_topic>
+    </plugin>
+
+    <plugin filename="Scoreboard" name="Scoreboard">
+      <gz-gui>
+        <title>Scoreboard</title>
+        <property type="bool" key="showTitleBar">true</property>
+        <property type="string" key="state">docked</property>
+      </gz-gui>
+      <topic>/scoring/display</topic>
+    </plugin>
+
+  </gui>
+
+  <!-- ============================================================
+       ENVIRONMENT
+       ============================================================ -->
+  <gravity>0 0 -9.81</gravity>
+
+  <scene>
+    <ambient>0.18 0.38 0.46 1.0</ambient>
+    <background>0.02 0.18 0.28 1.0</background>
+    <shadows>true</shadows>
+    <grid>false</grid>
+    <fog>
+      <type>exp2</type>
+      <color>0.03 0.30 0.38 1</color>
+      <density>0.085</density>
+      <start>0.6</start>
+      <end>18.0</end>
+    </fog>
+  </scene>
+
+  <!-- Primary directional: sun penetrating water surface -->
+  <light type="directional" name="sun_through_water">
+    <cast_shadows>false</cast_shadows>
+    <pose>0 0 5 0 0 0</pose>
+    <direction>-0.3 0.1 -0.95</direction>
+    <diffuse>0.68 0.86 0.94 1</diffuse>
+    <specular>0.55 0.72 0.78 1</specular>
+    <attenuation>
+      <range>1000</range>
+      <constant>0.9</constant>
+      <linear>0.01</linear>
+      <quadratic>0.001</quadratic>
+    </attenuation>
+  </light>
+
+  <!-- Water column scatter fill -->
+  <light type="point" name="water_column_scatter">
+    <pose>11.5 0 -2.0 0 0 0</pose>
+    <diffuse>0.22 0.48 0.62 1</diffuse>
+    <specular>0.10 0.22 0.30 1</specular>
+    <attenuation>
+      <range>50</range>
+      <constant>0.5</constant>
+      <linear>0.03</linear>
+      <quadratic>0.002</quadratic>
+    </attenuation>
+    <cast_shadows>false</cast_shadows>
+  </light>
+
+  <!-- Caustic dapple: 6 spots distributed across the 25×25 m pool -->
+  <light type="spot" name="caustic_spot_1">
+    <pose>3.0 4.0 0.05 0 3.14159 0</pose>
+    <diffuse>0.30 0.48 0.55 1</diffuse>
+    <specular>0.08 0.14 0.16 1</specular>
+    <attenuation>
+      <range>14</range><constant>0.2</constant>
+      <linear>0.05</linear><quadratic>0.005</quadratic>
+    </attenuation>
+    <spot><inner_angle>0.08</inner_angle><outer_angle>0.30</outer_angle><falloff>2.5</falloff></spot>
+    <cast_shadows>false</cast_shadows>
+    <visualize>false</visualize>
+  </light>
+  <light type="spot" name="caustic_spot_2">
+    <pose>3.0 -4.0 0.05 0 3.14159 0</pose>
+    <diffuse>0.28 0.44 0.52 1</diffuse>
+    <specular>0.07 0.12 0.14 1</specular>
+    <attenuation>
+      <range>12</range><constant>0.2</constant>
+      <linear>0.06</linear><quadratic>0.006</quadratic>
+    </attenuation>
+    <spot><inner_angle>0.09</inner_angle><outer_angle>0.28</outer_angle><falloff>2.2</falloff></spot>
+    <cast_shadows>false</cast_shadows>
+    <visualize>false</visualize>
+  </light>
+  <light type="spot" name="caustic_spot_3">
+    <pose>10.5 7.0 0.05 0 3.14159 0</pose>
+    <diffuse>0.32 0.50 0.58 1</diffuse>
+    <specular>0.09 0.15 0.17 1</specular>
+    <attenuation>
+      <range>16</range><constant>0.2</constant>
+      <linear>0.04</linear><quadratic>0.004</quadratic>
+    </attenuation>
+    <spot><inner_angle>0.07</inner_angle><outer_angle>0.25</outer_angle><falloff>3.0</falloff></spot>
+    <cast_shadows>false</cast_shadows>
+    <visualize>false</visualize>
+  </light>
+  <light type="spot" name="caustic_spot_4">
+    <pose>10.5 -7.0 0.05 0 3.14159 0</pose>
+    <diffuse>0.26 0.42 0.50 1</diffuse>
+    <specular>0.06 0.11 0.13 1</specular>
+    <attenuation>
+      <range>11</range><constant>0.2</constant>
+      <linear>0.06</linear><quadratic>0.006</quadratic>
+    </attenuation>
+    <spot><inner_angle>0.10</inner_angle><outer_angle>0.32</outer_angle><falloff>2.0</falloff></spot>
+    <cast_shadows>false</cast_shadows>
+    <visualize>false</visualize>
+  </light>
+  <light type="spot" name="caustic_spot_5">
+    <pose>19.0 5.0 0.05 0 3.14159 0</pose>
+    <diffuse>0.29 0.46 0.54 1</diffuse>
+    <specular>0.07 0.13 0.15 1</specular>
+    <attenuation>
+      <range>13</range><constant>0.2</constant>
+      <linear>0.05</linear><quadratic>0.005</quadratic>
+    </attenuation>
+    <spot><inner_angle>0.08</inner_angle><outer_angle>0.26</outer_angle><falloff>2.8</falloff></spot>
+    <cast_shadows>false</cast_shadows>
+    <visualize>false</visualize>
+  </light>
+  <light type="spot" name="caustic_spot_6">
+    <pose>19.0 -5.0 0.05 0 3.14159 0</pose>
+    <diffuse>0.31 0.49 0.57 1</diffuse>
+    <specular>0.08 0.14 0.16 1</specular>
+    <attenuation>
+      <range>12</range><constant>0.2</constant>
+      <linear>0.06</linear><quadratic>0.006</quadratic>
+    </attenuation>
+    <spot><inner_angle>0.09</inner_angle><outer_angle>0.29</outer_angle><falloff>2.4</falloff></spot>
+    <cast_shadows>false</cast_shadows>
+    <visualize>false</visualize>
+  </light>
+
+  <!-- ============================================================
+       POOL STRUCTURE  (25 m × 25 m, floor at z=−3 m, walls 3 m tall)
+       X: -1 → 24   Y: -12.5 → +12.5
+       Pool center: (11.5, 0)
+       ============================================================ -->
+
+  <model name="pool_floor">
+    <static>true</static>
+    <pose>11.5 0 -3.05 0 0 0</pose>
+    <link name="floor">
+      <collision name="collision">
+        <geometry><box><size>25 25 0.1</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>25 25 0.1</size></box></geometry>
+        <material>
+          <ambient>0.55 0.78 0.88 1</ambient>
+          <diffuse>0.62 0.84 0.92 1</diffuse>
+          <specular>0.30 0.38 0.42 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/pool_tile_skyblue_tiled.png</albedo_map>
+              <normal_map>../media/textures/pool_tile_normal_tiled.png</normal_map>
+              <roughness>0.15</roughness>
+              <metalness>0.0</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- North wall  Y = +12.5 -->
+  <model name="pool_wall_north">
+    <static>true</static>
+    <pose>11.5 12.5 -1.5 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>25 0.2 3</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>25 0.2 3</size></box></geometry>
+        <material>
+          <ambient>0.55 0.78 0.88 1</ambient>
+          <diffuse>0.62 0.84 0.92 1</diffuse>
+          <specular>0.28 0.36 0.40 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/pool_tile_skyblue_wall_tiled.png</albedo_map>
+              <normal_map>../media/textures/pool_tile_normal_tiled.png</normal_map>
+              <roughness>0.20</roughness>
+              <metalness>0.0</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- South wall  Y = -12.5 -->
+  <model name="pool_wall_south">
+    <static>true</static>
+    <pose>11.5 -12.5 -1.5 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>25 0.2 3</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>25 0.2 3</size></box></geometry>
+        <material>
+          <ambient>0.55 0.78 0.88 1</ambient>
+          <diffuse>0.62 0.84 0.92 1</diffuse>
+          <specular>0.28 0.36 0.40 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/pool_tile_skyblue_wall_tiled.png</albedo_map>
+              <normal_map>../media/textures/pool_tile_normal_tiled.png</normal_map>
+              <roughness>0.20</roughness>
+              <metalness>0.0</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- West wall  X = -1 (behind AUV start) -->
+  <model name="pool_wall_west">
+    <static>true</static>
+    <pose>-1 0 -1.5 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>0.2 25 3</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.2 25 3</size></box></geometry>
+        <material>
+          <ambient>0.55 0.78 0.88 1</ambient>
+          <diffuse>0.62 0.84 0.92 1</diffuse>
+          <specular>0.28 0.36 0.40 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/pool_tile_skyblue_wall_tiled.png</albedo_map>
+              <normal_map>../media/textures/pool_tile_normal_tiled.png</normal_map>
+              <roughness>0.20</roughness>
+              <metalness>0.0</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- East wall  X = 24 -->
+  <model name="pool_wall_east">
+    <static>true</static>
+    <pose>24 0 -1.5 0 0 0</pose>
+    <link name="wall">
+      <collision name="collision">
+        <geometry><box><size>0.2 25 3</size></box></geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.5</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.2 25 3</size></box></geometry>
+        <material>
+          <ambient>0.55 0.78 0.88 1</ambient>
+          <diffuse>0.62 0.84 0.92 1</diffuse>
+          <specular>0.28 0.36 0.40 1</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/pool_tile_skyblue_wall_tiled.png</albedo_map>
+              <normal_map>../media/textures/pool_tile_normal_tiled.png</normal_map>
+              <roughness>0.20</roughness>
+              <metalness>0.0</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- ============================================================
+       POOL DECK — concrete surround, seated ON the wall tops.
+
+       It used to float: the slabs sat at z ∈ [0.8, 1.0] while the
+       walls top out at z = 0, leaving an 0.8 m slot you could see
+       straight through, and the east/west slabs stopped 0.4 m short
+       of their walls. Now each slab spans z ∈ [0, 0.2] and its inner
+       edge lands on the wall's INNER face, so it works as coping and
+       there is no line of sight between deck and pool.
+
+       Pool opening: X ∈ [-0.9, 23.9]  Y ∈ [-12.4, 12.4]
+       ============================================================ -->
+  <model name="pool_deck_north">
+    <static>true</static>
+    <pose>11.5 27.4 0.1 0 0 0</pose>
+    <link name="deck">
+      <visual name="visual">
+        <geometry><box><size>75 30 0.2</size></box></geometry>
+        <material>
+          <ambient>0.72 0.71 0.68 1</ambient>
+          <diffuse>0.76 0.75 0.72 1</diffuse>
+          <specular>0.06 0.06 0.05 1</specular>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_deck_south">
+    <static>true</static>
+    <pose>11.5 -27.4 0.1 0 0 0</pose>
+    <link name="deck">
+      <visual name="visual">
+        <geometry><box><size>75 30 0.2</size></box></geometry>
+        <material>
+          <ambient>0.72 0.71 0.68 1</ambient>
+          <diffuse>0.76 0.75 0.72 1</diffuse>
+          <specular>0.06 0.06 0.05 1</specular>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_deck_west">
+    <static>true</static>
+    <pose>-13.4 0 0.1 0 0 0</pose>
+    <link name="deck">
+      <visual name="visual">
+        <geometry><box><size>25 25 0.2</size></box></geometry>
+        <material>
+          <ambient>0.72 0.71 0.68 1</ambient>
+          <diffuse>0.76 0.75 0.72 1</diffuse>
+          <specular>0.06 0.06 0.05 1</specular>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="pool_deck_east">
+    <static>true</static>
+    <pose>36.4 0 0.1 0 0 0</pose>
+    <link name="deck">
+      <visual name="visual">
+        <geometry><box><size>25 25 0.2</size></box></geometry>
+        <material>
+          <ambient>0.72 0.71 0.68 1</ambient>
+          <diffuse>0.76 0.75 0.72 1</diffuse>
+          <specular>0.06 0.06 0.05 1</specular>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- Water surface collision barrier — keeps AUV submerged -->
+  <model name="water_surface">
+    <static>true</static>
+    <pose>11.5 0 0.3 0 0 0</pose>
+    <link name="surface">
+      <collision name="collision">
+        <geometry>
+          <box><size>25 25 0.1</size></box>
+        </geometry>
+        <surface>
+          <contact><ode><kp>500000</kp><kd>200</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode></contact>
+          <friction><ode><mu>0.0</mu><mu2>0.0</mu2></ode></friction>
+        </surface>
+      </collision>
+    </link>
+  </model>
+
+  <!-- Water surface visual — semi-transparent textured plane at z=0 -->
+  <model name="water_surface_texture">
+    <static>true</static>
+    <pose>11.5 0 0 0 0 0</pose>
+    <link name="surface">
+      <visual name="visual">
+        <cast_shadows>false</cast_shadows>
+        <transparency>0.30</transparency>
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <!-- Exactly the pool opening, so it meets the deck coping edge
+                 to edge instead of overlapping it at the same height. -->
+            <size>24.8 24.8</size>
+          </plane>
+        </geometry>
+        <material>
+          <ambient>0.30 0.62 0.78 0.70</ambient>
+          <diffuse>0.35 0.68 0.82 0.70</diffuse>
+          <specular>0.90 0.92 0.95 0.70</specular>
+          <pbr>
+            <metal>
+              <albedo_map>../media/textures/water_water_0051_01.jpg</albedo_map>
+              <normal_map>../media/textures/water_normal.png</normal_map>
+              <roughness>0.08</roughness>
+              <metalness>0.02</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- ============================================================
+       AUV — starts at world origin, just below water surface
+       ============================================================ -->
+  <include>
+    <uri>model://m7urdfnew_sdf_package</uri>
+    <name>auv</name>
+    <pose>10 0 -0.5 0 0 0</pose>
+  </include>
+
+  <!-- ============================================================
+       TASK 1 — GATE                              X = 3.0
+       Top bar near surface; posts extend to ~Z = -1.7
+       ============================================================ -->
+  <include>
+    <uri>model://rs2026_gate</uri>
+    <name>task1_gate</name>
+    <!-- Gate mesh is flat in local XY (width=X 3.1m, height=Y 1.58m, thin Z 0.05m).
+         roll=π/2 yaw=π/2 maps: local X→worldY (width), local Y→worldZ (height), local Z→worldX (thin).
+         Z=-0.8 places top bar (local Y_max=+0.650) at world Z=-0.15 (just below surface),
+         bottom posts (local Y_min=-0.924) at world Z=-1.72. -->
+    <pose>3.0 0.0 -0.8 1.5708 0 1.5708</pose>
+  </include>
+
+  <!-- ============================================================
+       TASK 2 — SLALOM (Avoid Debris)             X = 9.5 – 11.3
+       3×3 grid: red centre poles at Y = -4.5
+                 white outer poles at Y = -3.0 and Y = -6.0
+       Row spacing 0.9 m, pole tops at Z ≈ -0.1 (near surface)
+       Right side of pool (negative Y)
+       ============================================================ -->
+
+  <!-- Row 1  X = 9.5 -->
+  <include>
+    <uri>model://slalom_white</uri>
+    <name>slalom_white_r1_left</name>
+    <pose>9.5 -3.0 -1.0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://slalom_red</uri>
+    <name>slalom_red_r1</name>
+    <pose>9.5 -4.5 -1.0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://slalom_white</uri>
+    <name>slalom_white_r1_right</name>
+    <pose>9.5 -6.0 -1.0 0 0 0</pose>
+  </include>
+
+  <!-- Row 2  X = 10.4 -->
+  <include>
+    <uri>model://slalom_white</uri>
+    <name>slalom_white_r2_left</name>
+    <pose>10.4 -3.0 -1.0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://slalom_red</uri>
+    <name>slalom_red_r2</name>
+    <pose>10.4 -4.5 -1.0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://slalom_white</uri>
+    <name>slalom_white_r2_right</name>
+    <pose>10.4 -6.0 -1.0 0 0 0</pose>
+  </include>
+
+  <!-- Row 3  X = 11.3 -->
+  <include>
+    <uri>model://slalom_white</uri>
+    <name>slalom_white_r3_left</name>
+    <pose>11.3 -3.0 -1.0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://slalom_red</uri>
+    <name>slalom_red_r3</name>
+    <pose>11.3 -4.5 -1.0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://slalom_white</uri>
+    <name>slalom_white_r3_right</name>
+    <pose>11.3 -6.0 -1.0 0 0 0</pose>
+  </include>
+
+  <!-- ============================================================
+       TASK 3 — BINS (Recon)                      X = 17.0
+       Anchored to pool floor (Z = -3). Right side of pool.
+       ============================================================ -->
+  <include>
+    <uri>model://rs2026_bin_urdf</uri>
+    <name>task3_bins</name>
+    <!-- Bin mesh local Z starts at 0.893 (not 0). Z=-3.893 places base at floor Z=-3. -->
+    <pose>17.0 -5.0 -3.893 0 0 0</pose>
+  </include>
+
+
+  <!-- ============================================================
+       TASK 4 — TORPEDOES
+       Static, collision-free target board (the AUV fires through the
+       openings). The model frame is centred on the visible target and
+       the board spans ±0.55 m in Z about that frame, so Z = -2.4501
+       puts its lowest point exactly on the floor at Z = -3.
+       ============================================================ -->
+  <include>
+    <uri>model://rs2026_torpedo</uri>
+    <name>task4_torpedo</name>
+    <pose>16.0 5.0 -2.4501 0 0 0</pose>
+  </include>
+
+</world>
+</sdf>

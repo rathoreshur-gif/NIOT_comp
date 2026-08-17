@@ -1,0 +1,804 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="gipper extension 3.0 assembly  2">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.65922 -1.2593 0.82698"
+        rpy="0 0 0" />
+      <mass
+        value="2.6592" />
+      <inertia
+        ixx="0.034914"
+        ixy="-1.101E-05"
+        ixz="-0.00055487"
+        iyy="0.06413"
+        iyz="-2.921E-06"
+        izz="0.09005" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.61 0 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="black">
+    <inertial>
+      <origin
+        xyz="0.054917 0.31276 0.33968"
+        rpy="0 0 0" />
+      <mass
+        value="1.1396" />
+      <inertia
+        ixx="0.022853"
+        ixy="0.0028791"
+        ixz="2.0408E-05"
+        iyy="0.023161"
+        iyz="-1.7639E-05"
+        izz="0.0064137" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/black.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0 0 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/black.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="black"
+    type="prismatic">
+    <origin
+      xyz="0.35465 -1.0163 0.98088"
+      rpy="-1.5708 -0.81214 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="black" />
+    <axis
+      xyz="0.72576 -0.68795 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="delrin">
+    <inertial>
+      <origin
+        xyz="0.48825 0.29026 0.12962"
+        rpy="0 0 0" />
+      <mass
+        value="1.3072" />
+      <inertia
+        ixx="0.0012196"
+        ixy="-5.3101E-05"
+        ixz="-0.000106"
+        iyy="0.0010297"
+        iyz="-5.2425E-05"
+        izz="0.0012207" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/delrin.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/delrin.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="delrin"
+    type="continuous">
+    <origin
+      xyz="1.0465 -1.0076 0.55838"
+      rpy="1.5708 0 -2.3562" />
+    <parent
+      link="base_link" />
+    <child
+      link="delrin" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="steelbar">
+    <inertial>
+      <origin
+        xyz="-0.15245 0.031781 0.028503"
+        rpy="0 0 0" />
+      <mass
+        value="0.3346" />
+      <inertia
+        ixx="6.7178E-05"
+        ixy="1.4361E-06"
+        ixz="1.9414E-08"
+        iyy="0.0023494"
+        iyz="4.7213E-06"
+        izz="0.0023836" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/steelbar.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.45 0.47 0.54 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/steelbar.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="steelbar"
+    type="fixed">
+    <origin
+      xyz="0.69465 -1.4128 0.75588"
+      rpy="0 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="steelbar" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="transparent">
+    <inertial>
+      <origin
+        xyz="0.0064312 0.020504 7.0264E-05"
+        rpy="0 0 0" />
+      <mass
+        value="3.035" />
+      <inertia
+        ixx="0.029071"
+        ixy="1.2438E-19"
+        ixz="2.9415E-18"
+        iyy="0.098996"
+        iyz="-5.6379E-08"
+        izz="0.070368" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/transparent.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 0.35" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/transparent.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="trans"
+    type="fixed">
+    <origin
+      xyz="0.67465 -1.2583 0.96138"
+      rpy="-1.5708 0 3.1416" />
+    <parent
+      link="base_link" />
+    <child
+      link="transparent" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="aluminium">
+    <inertial>
+      <origin
+        xyz="0.10464 0.11024 -0.28225"
+        rpy="0 0 0" />
+      <mass
+        value="0.30637" />
+      <inertia
+        ixx="7.0364E-05"
+        ixy="-1.5517E-08"
+        ixz="1.2662E-08"
+        iyy="8.6843E-05"
+        iyz="-1.4048E-09"
+        izz="7.5941E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/aluminium.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.3 0.3 0.3 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/aluminium.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="al"
+    type="continuous">
+    <origin
+      xyz="0.38819 -1.1543 0.81638"
+      rpy="1.5708 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="aluminium" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="red handle">
+    <inertial>
+      <origin
+        xyz="-0.030387 0.22777 0.075161"
+        rpy="0 0 0" />
+      <mass
+        value="0.073843" />
+      <inertia
+        ixx="1.2906E-05"
+        ixy="5.243E-07"
+        ixz="-3.0724E-11"
+        iyy="9.5739E-06"
+        iyz="2.0286E-10"
+        izz="7.3194E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/red handle.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.55 0.04 0.04 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/red handle.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="red"
+    type="fixed">
+    <origin
+      xyz="0.44491 -1.3339 0.99344"
+      rpy="1.5708 -1.4184 3.1416" />
+    <parent
+      link="base_link" />
+    <child
+      link="red handle" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="black Lconector">
+    <inertial>
+      <origin
+        xyz="-0.193 0.10014 0.0635"
+        rpy="0 0 0" />
+      <mass
+        value="0.29626" />
+      <inertia
+        ixx="4.3957E-05"
+        ixy="1.2852E-16"
+        ixz="1.3815E-10"
+        iyy="9.7529E-05"
+        iyz="6.1695E-11"
+        izz="0.0001103" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/black Lconector.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.27 0.27 0.27 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/black Lconector.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="b"
+    type="continuous">
+    <origin
+      xyz="0.73915 -1.4523 0.74083"
+      rpy="1.5708 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="black Lconector" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="yellow killswitch">
+    <inertial>
+      <origin
+        xyz="0.10668 -0.22907 0.028517"
+        rpy="0 0 0" />
+      <mass
+        value="0.20858" />
+      <inertia
+        ixx="7.1542E-05"
+        ixy="6.4756E-10"
+        ixz="1.9425E-09"
+        iyy="7.1542E-05"
+        iyz="-3.581E-09"
+        izz="5.9331E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/yellow killswitch.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.95 0.8 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/yellow killswitch.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="y"
+    type="continuous">
+    <origin
+      xyz="1.0465 -1.511 0.90238"
+      rpy="0 0 2.6182" />
+    <parent
+      link="base_link" />
+    <child
+      link="yellow killswitch" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="green elec">
+    <inertial>
+      <origin
+        xyz="-0.071208 0.031187 0.022495"
+        rpy="0 0 0" />
+      <mass
+        value="1.2648" />
+      <inertia
+        ixx="0.0019293"
+        ixy="-1.8173E-06"
+        ixz="-1.3322E-07"
+        iyy="0.0032292"
+        iyz="7.397E-07"
+        izz="0.0049822" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/green elec.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.02 0.44 0.24 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/green elec.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="g"
+    type="fixed">
+    <origin
+      xyz="0.68656 -1.3261 0.83338"
+      rpy="3.1416 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="green elec" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="blue thruster">
+    <inertial>
+      <origin
+        xyz="0.42878 0.28699 0.053742"
+        rpy="0 0 0" />
+      <mass
+        value="1.3752" />
+      <inertia
+        ixx="0.00091621"
+        ixy="3.3334E-05"
+        ixz="1.319E-07"
+        iyy="0.0008993"
+        iyz="1.2396E-07"
+        izz="0.0010748" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/blue thruster.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.38 0.4 0.45 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/blue thruster.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="b"
+    type="continuous">
+    <origin
+      xyz="1.0465 -1.0076 0.77967"
+      rpy="0 0 3.1416" />
+    <parent
+      link="base_link" />
+    <child
+      link="blue thruster" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+  <link
+    name="gripper steel">
+    <inertial>
+      <origin
+        xyz="-0.57313 0.12758 0.060374"
+        rpy="0 0 0" />
+      <mass
+        value="0.36033" />
+      <inertia
+        ixx="0.00017119"
+        ixy="4.7784E-06"
+        ixz="1.0583E-07"
+        iyy="0.00082285"
+        iyz="3.3429E-06"
+        izz="0.00079783" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/gripper steel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.11 0.46 0.64 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/gripper steel.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="g"
+    type="continuous">
+    <origin
+      xyz="0.99965 -0.69882 0.43584"
+      rpy="1.5708 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="gripper steel" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="gripper aluminium">
+    <inertial>
+      <origin
+        xyz="0.01128 0.092071 0.013471"
+        rpy="0 0 0" />
+      <mass
+        value="0.26151" />
+      <inertia
+        ixx="0.00035751"
+        ixy="-2.3194E-05"
+        ixz="7.925E-06"
+        iyy="0.00036989"
+        iyz="-4.542E-05"
+        izz="0.00060257" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/gripper aluminium.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.58 0.6 0.69 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/gripper aluminium.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="g"
+    type="prismatic">
+    <origin
+      xyz="1.0341 -1.273 0.48389"
+      rpy="1.5929 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="gripper aluminium" />
+    <axis
+      xyz="0 0.99976 -0.022129" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="fingre blue">
+    <inertial>
+      <origin
+        xyz="0.042853 0.096365 -0.0026125"
+        rpy="0 0 0" />
+      <mass
+        value="0.31826" />
+      <inertia
+        ixx="0.00033661"
+        ixy="7.8661E-05"
+        ixz="6.262E-06"
+        iyy="0.00011878"
+        iyz="-2.167E-05"
+        izz="0.00041266" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/fingre blue.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.04 0.61 0.92 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/fingre blue.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="f"
+    type="prismatic">
+    <origin
+      xyz="1.0788 -1.3257 0.34794"
+      rpy="1.5932 0.16115 1.5744" />
+    <parent
+      link="base_link" />
+    <child
+      link="fingre blue" />
+    <axis
+      xyz="0.16046 -0.98679 0.022135" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="light red">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0" />
+      <inertia
+        ixx="0"
+        ixy="0"
+        ixz="0"
+        iyy="0"
+        iyz="0"
+        izz="0" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/light red.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.53 0.28 0.28 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://gipper extension 3.0 assembly  2/meshes/light red.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="l"
+    type="fixed">
+    <origin
+      xyz="0.733298433355658 -1.42281855196627 0.697881717320121"
+      rpy="1.5707963267949 0 1.57079634169605" />
+    <parent
+      link="base_link" />
+    <child
+      link="light red" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>

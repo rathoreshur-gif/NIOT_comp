@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <!-- Task 5 octagon pickup: screw. See rs2026_pickup_bandaid/model.sdf for why
+       the roll, the offset and the mesh scale are baked in.
+
+       This prop is 0.140 m across in CAD rather than 0.168, so it takes its own
+       scale to land on the same 0.070 m grasp width: 0.070 / 0.140 = 0.5.
+
+       Mesh AABB after the roll and scale: 0.0700 x 0.0700 x 0.0500 m. -->
+  <model name="rs2026_pickup_screw">
+    <link name="pickup_link">
+      <inertial>
+        <!-- 1200 kg/m^3 over the collision box; see rs2026_pickup_bandaid. -->
+        <mass>0.2940</mass>
+        <inertia>
+          <ixx>0.000181</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.000181</iyy><iyz>0</iyz>
+          <izz>0.000240</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="pickup_collision">
+        <geometry>
+          <box><size>0.0700 0.0700 0.0500</size></box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode><kp>500000</kp><kd>200</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode>
+          </contact>
+          <friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction>
+        </surface>
+      </collision>
+
+      <visual name="pickup_visual">
+        <pose>0.085000 -0.150000 -0.045000 1.570796 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.500000 0.500000 0.500000</scale>
+            <uri>model://rs2026_octogon/meshes/screw_pickup_obj.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+
+    <!-- Water drag; see rs2026_pickup_capsule/model.sdf for the derivation and for
+         why the added-mass terms are deliberately left at zero. -->
+    <plugin filename="ignition-gazebo-hydrodynamics-system"
+            name="ignition::gazebo::systems::Hydrodynamics">
+      <link_name>pickup_link</link_name>
+
+      <xU>-0.5</xU>
+      <yV>-0.5</yV>
+      <zW>-0.5</zW>
+      <kP>-0.002</kP>
+      <mQ>-0.002</mQ>
+      <nR>-0.002</nR>
+
+      <xUabsU>-1.9</xUabsU>
+      <yVabsV>-1.9</yVabsV>
+      <zWabsW>-2.6</zWabsW>
+      <kPabsP>-0.005</kPabsP>
+      <mQabsQ>-0.005</mQabsQ>
+      <nRabsR>-0.005</nRabsR>
+    </plugin>
+  </model>
+</sdf>

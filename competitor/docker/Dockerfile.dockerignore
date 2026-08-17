@@ -1,0 +1,26 @@
+# Build context is the repository root, so this prunes it down to the two
+# packages the competitor image actually builds. BuildKit picks up
+# <dockerfile>.dockerignore.
+
+# The simulator, the world generator and the scoring code must not end up in the
+# competitor's image — its only view of the simulation is the domain bridge.
+# auv_msgs is the one exception, since the controller needs its message types.
+simulator/*
+!simulator/auv_msgs
+
+# Run artefacts from previous runs: bind-mounted at runtime, never built in.
+.docker-runs/
+
+**/.git
+**/.github
+**/__pycache__
+**/*.pyc
+**/build
+**/install
+**/log
+**/*.zip
+
+.vscode
+.claude
+.agents
+.codex

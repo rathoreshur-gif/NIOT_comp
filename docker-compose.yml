@@ -1,0 +1,138 @@
+# NIOT AUV competition stack: simulator, domain bridge, competitor.
+#
+#   ./run.sh build          # or: docker compose build
+#   ./run.sh up             # start all three
+#   ./run.sh sim            # follow the simulator's logs
+#
+#   SIM_GUI=false docker compose up      # headless, no X11 needed
+#   SIM_SEED=1234 docker compose up      # replay a specific course
+#
+# Topology:
+#
+#   sim              ROS_DOMAIN_ID=0    competition.launch.py + simulator_bridge
+#     |
+#   domain_bridge                       joins domains 0 and 1, whitelist only
+#     |
+#   competitor       ROS_DOMAIN_ID=1    basic_controller
+#
+# The two ROS graphs are separate domains, so the competitor cannot see /scoring/*
+# or the raw /model/auv/* topics. simulator/docker/domain_bridge.yaml is the only
+# path between them and lists exactly what crosses.
+#
+# Both images build from the repository root, because each needs auv_msgs
+# (vendored at simulator/auv_msgs) alongside its own sources. The per-image
+# <dockerfile>.dockerignore files prune the context down from there, so a
+# controller edit does not invalidate the simulator's build cache.
+services:
+  sim:
+    build:
+      context: .
+      dockerfile: simulator/docker/Dockerfile
+    image: niot-sim:jazzy
+    container_name: niot-sim
+    stdin_open: true
+    tty: true
+
+    # Gazebo's transport layer and DDS both want unrestricted multicast/shared
+    # memory. All three services share the host network and IPC namespace: host
+    # networking alone is not enough, because FastDDS advertises shared-memory
+    # locators and a service in a different IPC namespace cannot reach them —
+    # discovery stalls rather than falling back to UDP.
+    network_mode: host
+    ipc: host
+
+    # competition.launch.py starts Gazebo under `nice -n -10`. Without this the
+    # renice fails and Gazebo runs at default priority.
+    cap_add:
+      - SYS_NICE
+
+    # `ros2 launch` is PID 1 here, which reaps no zombies and handles signals
+    # poorly. tini fixes both.
+    init: true
+
+    # Gazebo needs time to tear down; the 10s default SIGKILLs it mid-shutdown.
+    stop_grace_period: 30s
+
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
+      - XDG_RUNTIME_DIR=/tmp/runtime-root
+      - ROS_DOMAIN_ID=0
+      # Ignored unless the container is started with the nvidia runtime; see
+      # simulator/docker/README.md for the NVIDIA path.
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Generated worlds and ground-truth JSON land in the container's tmp;
+      # bind-mounting keeps a run's artefacts readable from the host.
+      - ./.docker-runs:/tmp/matsya_competition
+
+    # Hardware GL through the host's render nodes. Drop this block (and set
+    # LIBGL_ALWAYS_SOFTWARE=1) if the machine has no /dev/dri.
+    devices:
+      - /dev/dri:/dev/dri
+
+    # simulator_bridge is off by default in the launch file, which is why it is
+    # passed explicitly. The entrypoint sources ROS and execs this.
+    #
+    # teleop is forced OFF, and that is not optional for a competition run: the
+    # teleop node publishes to the same /model/auv/joint/*/cmd_thrust topics as
+    # simulator_bridge, at 50 Hz, and freezes position/heading/depth whenever no
+    # key is held. Left on, it silently station-keeps against the competitor's
+    # controller — the vehicle just sits there while both sides fight. Set
+    # SIM_TELEOP=true only when driving by hand with no controller running.
+    command: >
+      ros2 launch auv_worlds competition.launch.py
+        simulator_bridge:=true
+        gui:=${SIM_GUI:-true}
+        seed:=${SIM_SEED:-auto}
+        scoring:=${SIM_SCORING:-true}
+        teleop:=${SIM_TELEOP:-false}
+
+  # Reuses the simulator image rather than building a third one: bridging
+  # auv_msgs topics needs auv_msgs on AMENT_PREFIX_PATH, and that image already
+  # has it built. Costs one apt package instead of a whole image.
+  domain_bridge:
+    image: niot-sim:jazzy
+    container_name: niot-domain-bridge
+    depends_on:
+      - sim
+    network_mode: host
+    ipc: host
+    init: true
+
+    # The bridge process joins both domains itself; the per-topic from_domain /
+    # to_domain in the YAML is what actually decides direction. This is just the
+    # default for its own node.
+    environment:
+      - ROS_DOMAIN_ID=0
+
+    # Mounted rather than baked in, so changing the whitelist is a
+    # `docker compose restart domain_bridge` instead of a rebuild.
+    volumes:
+      - ./simulator/docker/domain_bridge.yaml:/etc/niot/domain_bridge.yaml:ro
+
+    command: ros2 run domain_bridge domain_bridge /etc/niot/domain_bridge.yaml
+
+  # The competitor's codebase. Deliberately a separate, much smaller image: no
+  # Gazebo, no Qt, no scoring code — only auv_msgs and the controller.
+  competitor:
+    build:
+      context: .
+      dockerfile: competitor/docker/Dockerfile
+    image: niot-competitor:jazzy
+    container_name: niot-competitor
+    depends_on:
+      - domain_bridge
+    network_mode: host
+    ipc: host
+    init: true
+    stdin_open: true
+    tty: true
+
+    environment:
+      - ROS_DOMAIN_ID=1
+
+    command: ros2 launch competitor_controller competitor.launch.py

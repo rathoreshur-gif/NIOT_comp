@@ -1,0 +1,898 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="m7urdfnew_sdf_package">
+
+    <link name="base_link">
+
+      <inertial>
+        <mass>40.81837758</mass>
+        <inertia>
+          <ixx>1000</ixx>  <ixy>0</ixy>  <ixz>0</ixz>
+          <iyy>1000</iyy>   <iyz>0</iyz>
+          <izz>7.90</izz>
+        </inertia>
+      </inertial>
+
+      <collision name="collision">
+        <pose>0 0 0.05 0 0 0</pose>
+        <geometry>
+          <box><size>1.5 0.1665 0.1665</size></box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <kp>1000000</kp><kd>100</kd>
+              <max_vel>0.5</max_vel><min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+
+      <!-- Scoring: hull contacts against anything at all. Reports the pool
+           floor and walls too, so consumers filter by the other collision's
+           model name. This is the sensor to use for props there are too many
+           of to instrument individually, such as the nine slalom poles. -->
+      <sensor name="hull_contact_sensor" type="contact">
+        <update_rate>30.0</update_rate>
+        <always_on>true</always_on>
+        <contact>
+          <collision>collision</collision>
+        </contact>
+      </sensor>
+
+      <visual name="m7urdfnew_sdf_package_base_link_visual_0">
+        <pose>0.687 -1.259 -0.766 0 0 3.14159</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.61 0 0 1</ambient>
+          <diffuse>0.61 0 0 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_black_visual_0">
+        <pose>0.33235 -0.2427 0.21488 -1.5708 -0.81214 1.57079</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/black.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0 0 0 1</ambient>
+          <diffuse>0 0 0 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_delrin_visual_0">
+        <pose>-0.3595 -0.2514 -0.20762 1.5708 0 0.785393</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/delrin.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>1 1 1 1</ambient>
+          <diffuse>1 1 1 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_steelbar_visual_0">
+        <pose>-0.00765 0.1538 -0.01012 0 0 1.57079</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/steelbar.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.45 0.47 0.54 1</ambient>
+          <diffuse>0.45 0.47 0.54 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_transparent_visual_0">
+        <pose>0.01235 -0.0007 0.19538 -1.5708 0 2.65359e-06</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/transparent.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>1 1 1 0.35</ambient>
+          <diffuse>1 1 1 0.35</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_aluminium_visual_0">
+        <pose>0.29881 -0.1047 0.05038 1.5708 0 1.57079</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/aluminium.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.3 0.3 0.3 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_red_handle_visual_0">
+        <pose>0.24209 0.0749 0.22744 1.5708 -1.4184 2.65359e-06</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/red handle.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.55 0.04 0.04 1</ambient>
+          <diffuse>0.55 0.04 0.04 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_black_Lconector_visual_0">
+        <pose>-0.05215 0.1933 -0.02517 1.5708 0 1.57079</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/black Lconector.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.27 0.27 0.27 1</ambient>
+          <diffuse>0.27 0.27 0.27 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_yellow_killswitch_visual_0">
+        <pose>-0.3595 0.252 0.13638 0 0 -0.523393</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/yellow killswitch.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.95 0.8 1 1</ambient>
+          <diffuse>0.95 0.8 1 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_green_elec_visual_0">
+        <pose>0.00044 0.0671 0.06738 -3.14159 0 1.57079</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/green elec.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.02 0.44 0.24 1</ambient>
+          <diffuse>0.02 0.44 0.24 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_blue_thruster_visual_0">
+        <pose>-0.3595 -0.2514 0.01367 0 0 2.65359e-06</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/blue thruster.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.38 0.4 0.45 1</ambient>
+          <diffuse>0.38 0.4 0.45 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_gripper_steel_visual_0">
+        <pose>-0.31265 -0.56018 -0.33016 1.5708 0 -1.57079</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/gripper steel.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.11 0.46 0.64 1</ambient>
+          <diffuse>0.11 0.46 0.64 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="m7urdfnew_sdf_package_gripper_aluminium_visual_0">
+        <pose>-0.3471 0.014 -0.28211 1.5929 0 -1.57079</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/gripper aluminium.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.58 0.6 0.69 1</ambient>
+          <diffuse>0.58 0.6 0.69 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <!-- FINGERS REMOVED FROM HERE -->
+      <visual name="m7urdfnew_sdf_package_light_red_visual_0">
+        <pose>-0.0462984 0.163819 -0.0681183 1.5708 0 -1.57079</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/light red.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.53 0.28 0.28 1</ambient>
+          <diffuse>0.53 0.28 0.28 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+
+      <sensor name="imu_sensor_1" type="imu">
+        <pose>0.5 0.1 0 0 0 0</pose>
+        <always_on>1</always_on>
+        <update_rate>30</update_rate>
+        <topic>/model/auv/imu_1</topic>
+        <imu>
+          <angular_velocity>
+            <x><noise type="gaussian"><mean>0</mean><stddev>0.05</stddev><bias_mean>0</bias_mean><bias_stddev>0.1</bias_stddev></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>0.05</stddev><bias_mean>0</bias_mean><bias_stddev>0.1</bias_stddev></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.05</stddev><bias_mean>0</bias_mean><bias_stddev>0.1</bias_stddev></noise></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><noise type="gaussian"><mean>0</mean><stddev>0.5</stddev><bias_mean>0</bias_mean><bias_stddev>0.2</bias_stddev></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>0.5</stddev><bias_mean>0</bias_mean><bias_stddev>0.2</bias_stddev></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.5</stddev><bias_mean>0</bias_mean><bias_stddev>0.2</bias_stddev></noise></z>
+          </linear_acceleration>
+        </imu>
+      </sensor>
+
+      <!-- 700x400 is exactly half of the original 1400x800, so the aspect ratio
+           and therefore the vertical FOV are unchanged, and the focal length in
+           sim pixels halves exactly (761.24 -> 380.62). simulator_bridge's
+           _init_distortion_maps hardcodes both; keep them in step with this. -->
+      <sensor name="front_camera" type="rgbd_camera">
+        <pose>1.5 0 0.5 0 0 0</pose>
+        <topic>/model/auv/front_camera</topic>
+        <camera>
+          <horizontal_fov>1.487</horizontal_fov>
+          <image>
+            <width>700</width>
+            <height>400</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip><near>0.1</near><far>30</far></clip>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>15</update_rate>
+        <visualize>false</visualize>
+      </sensor>
+
+      <!-- Halved alongside the front camera; f_sim 752.59 -> 376.30. -->
+      <sensor name="bottom_camera" type="camera">
+        <pose>0 0 -0.3 0 1.5708 0</pose>
+        <topic>/model/auv/bottom_camera/image</topic>
+        <camera>
+          <horizontal_fov>1.500</horizontal_fov>
+          <image>
+            <width>700</width>
+            <height>400</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip><near>0.05</near><far>50</far></clip>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>15</update_rate>
+        <visualize>false</visualize>
+      </sensor>
+    </link>
+
+
+    <plugin filename="ignition-gazebo-hydrodynamics-system"
+            name="ignition::gazebo::systems::Hydrodynamics">
+      <link_name>base_link</link_name>
+
+      <xDotU>-0.196</xDotU>
+      <yDotV>-9.31</yDotV>
+      <zDotW>-9.31</zDotW>
+      <kDotP>-0.1</kDotP>
+      <mDotQ>-1.84</mDotQ>
+      <nDotR>-1.84</nDotR>
+
+      <xU>-130.7</xU>
+      <yV>-116.0</yV>
+      <zW>-116.0</zW>
+      <kP>-9.5</kP>
+      <mQ>-9.50</mQ>
+      <nR>-9.50</nR>
+
+      <xUabsU>-14.5</xUabsU>
+      <yVabsV>-216.0</yVabsV>
+      <zWabsW>-350.0</zWabsW>
+      <kPabsP>-2.0  </kPabsP>
+      <mQabsQ>-18.0</mQabsQ>
+      <nRabsR>-18.0</nRabsR>
+
+    </plugin>
+
+
+    <plugin filename="ignition-gazebo-pose-publisher-system"
+            name="ignition::gazebo::systems::PosePublisher">
+      <publish_link_pose>true</publish_link_pose>
+      <publish_sensor_pose>false</publish_sensor_pose>
+      <publish_collision_pose>false</publish_collision_pose>
+      <publish_visual_pose>false</publish_visual_pose>
+      <link_name>base_link</link_name>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <update_frequency>20</update_frequency>
+      <frame_id>world</frame_id>
+    </plugin>
+
+
+    <plugin filename="ignition-gazebo-odometry-publisher-system"
+            name="ignition::gazebo::systems::OdometryPublisher">
+      <odom_frame>odom</odom_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+      <dimensions>3</dimensions>
+      <degrees>true</degrees>
+      <publish_odometry>true</publish_odometry>
+      <publish_tf>true</publish_tf>
+      <update_frequency>20</update_frequency>
+    </plugin>
+
+
+    <link name="surge_front_left_link">
+      <pose>0.402 -0.244 0.0 0.0 0.0 0.785</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="surge_front_left_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>surge_front_left_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0.707 -0.707 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>surge_front_left_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <link name="surge_front_right_link">
+      <pose>0.402 0.244 0.0 0.0 0.0 -0.785</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="surge_front_right_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>surge_front_right_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0.707 0.707 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>surge_front_right_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <link name="surge_back_left_link">
+      <pose>-0.402 -0.244 0.0 0.0 0.0 -0.785</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="surge_back_left_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>surge_back_left_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0.707 0.707 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>surge_back_left_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <link name="surge_back_right_link">
+      <pose>-0.402 0.244 0.0 0.0 0.0 0.785</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="surge_back_right_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>surge_back_right_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0.707 -0.707 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>surge_back_right_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <link name="heave_front_left_link">
+      <pose>0.226 -0.301 0.0 0.0 1.57 0.0</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="heave_front_left_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>heave_front_left_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>heave_front_left_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <link name="heave_front_right_link">
+      <pose>0.226 0.301 0.0 0.0 1.57 0.0</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="heave_front_right_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>heave_front_right_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>heave_front_right_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <link name="heave_back_left_link">
+      <pose>-0.226 -0.301 0.0 0.0 1.57 0.0</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="heave_back_left_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>heave_back_left_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>heave_back_left_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <link name="heave_back_right_link">
+      <pose>-0.226 0.301 0.0 0.0 1.57 0.0</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="heave_back_right_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>heave_back_right_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>heave_back_right_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <model name="marker_left">
+      <pose>0.0 0.12 -0.10 0 0 0</pose>
+      <link name="marker_left_link">
+        <inertial>
+          <mass>0.001</mass>
+          <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+        </inertial>
+        <collision name="marker_left_collision">
+          <pose>-0.6538 1.2814 -0.8547 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://marker/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="marker_left_visual">
+          <pose>-0.6538 1.2814 -0.8547 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://marker/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <material>
+            <ambient>0.990196 1 1 1</ambient>
+            <diffuse>0.990196 1 1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <plugin filename="ignition-gazebo-detachable-joint-system"
+            name="ignition::gazebo::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>marker_left</child_model>
+      <child_link>marker_left_link</child_link>
+      <detach_topic>/model/auv/joint/marker_left_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/marker_left_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/marker_left_joint/state</output_topic>
+    </plugin>
+
+    <model name="marker_right">
+      <pose>0.0 -0.12 -0.10 0 0 0</pose>
+      <link name="marker_right_link">
+        <inertial>
+          <mass>0.001</mass>
+          <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+        </inertial>
+        <collision name="marker_right_collision">
+          <pose>-0.6538 1.2814 -0.8547 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://marker/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="marker_right_visual">
+          <pose>-0.6538 1.2814 -0.8547 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://marker/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <material>
+            <ambient>0.990196 1 1 1</ambient>
+            <diffuse>0.990196 1 1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <plugin filename="ignition-gazebo-detachable-joint-system"
+            name="ignition::gazebo::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>marker_right</child_model>
+      <child_link>marker_right_link</child_link>
+      <detach_topic>/model/auv/joint/marker_right_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/marker_right_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/marker_right_joint/state</output_topic>
+    </plugin>
+
+    <model name="torpedo_left">
+      <pose>0.35 0.12 0.0 0 0 3.14159</pose>
+      <link name="torpedo_left_link">
+        <inertial>
+          <mass>0.001</mass>
+          <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+        </inertial>
+        <collision name="torpedo_left_collision">
+          <pose>-0.6732 1.2666 -0.8614 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://torPEDO/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="torpedo_left_visual">
+          <pose>-0.6732 1.2666 -0.8614 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://torPEDO/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <material>
+            <ambient>0.792157 0.819608 0.933333 1</ambient>
+            <diffuse>0.792157 0.819608 0.933333 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <plugin filename="ignition-gazebo-detachable-joint-system"
+            name="ignition::gazebo::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>torpedo_left</child_model>
+      <child_link>torpedo_left_link</child_link>
+      <detach_topic>/model/auv/joint/torpedo_left_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/torpedo_left_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/torpedo_left_joint/state</output_topic>
+    </plugin>
+
+    <model name="torpedo_right">
+      <pose>0.35 -0.12 0.0 0 0 3.14159</pose>
+      <link name="torpedo_right_link">
+        <inertial>
+          <mass>0.001</mass>
+          <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+        </inertial>
+        <collision name="torpedo_right_collision">
+          <pose>-0.6732 1.2666 -0.8614 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://torPEDO/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="torpedo_right_visual">
+          <pose>-0.6732 1.2666 -0.8614 0 0 0</pose>
+          <geometry>
+            <mesh>
+              <uri>model://torPEDO/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <material>
+            <ambient>0.792157 0.819608 0.933333 1</ambient>
+            <diffuse>0.792157 0.819608 0.933333 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <plugin filename="ignition-gazebo-detachable-joint-system"
+            name="ignition::gazebo::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>torpedo_right</child_model>
+      <child_link>torpedo_right_link</child_link>
+      <detach_topic>/model/auv/joint/torpedo_right_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/torpedo_right_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/torpedo_right_joint/state</output_topic>
+    </plugin>
+
+    <!-- NEW FINGER LINKS AND JOINTS ADDED HERE -->
+    <link name="left_finger_link">
+      <inertial>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.0001</iyy><iyz>0</iyz>
+          <izz>0.0001</izz>
+        </inertia>
+      </inertial>
+      <visual name="left_finger_visual">
+        <pose>-0.3918 0.0667 -0.41806 1.5932 0.16115 -1.56719</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/fingre blue left.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.04 0.61 0.92 1</ambient>
+          <diffuse>0.04 0.61 0.92 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <collision name="left_finger_collision">
+        <pose>-0.3918 0.0667 -0.41806 1.5932 0.16115 -1.56719</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/fingre blue left.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <sensor name="left_finger_contact_sensor" type="contact">
+        <update_rate>30.0</update_rate>
+        <always_on>true</always_on>
+        <contact>
+          <collision>left_finger_collision</collision>
+        </contact>
+      </sensor>
+    </link>
+
+    <joint name="left_finger_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>left_finger_link</child>
+      <!-- Adjust this pose to accurately reflect the mechanical pivot point -->
+      <pose>-0.4021 0.1000 -0.2831 0 0 0</pose> 
+      <axis>
+        <xyz>1 0 0</xyz> 
+        <limit>
+          <lower>-0.5</lower>
+          <upper>0.0</upper>
+          <effort>10.0</effort>
+          <velocity>1.0</velocity>
+        </limit>
+      </axis>
+    </joint>
+
+    <link name="right_finger_link">
+      <inertial>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.0001</iyy><iyz>0</iyz>
+          <izz>0.0001</izz>
+        </inertia>
+      </inertial>
+      <visual name="right_finger_visual">
+        <pose>-0.3918 0.0667 -0.41806 1.5932 0.16115 -1.56719</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/fingre blue right.stl</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.04 0.61 0.92 1</ambient>
+          <diffuse>0.04 0.61 0.92 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <collision name="right_finger_collision">
+        <pose>-0.3918 0.0667 -0.41806 1.5932 0.16115 -1.56719</pose>
+        <geometry>
+          <mesh>
+            <uri>model://m7urdfnew_sdf_package/meshes/fingre blue right.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <sensor name="right_finger_contact_sensor" type="contact">
+        <update_rate>30.0</update_rate> <!-- Checks 30 times a second -->
+        <always_on>true</always_on>
+        <contact>
+          <collision>right_finger_collision</collision>
+        </contact>
+      </sensor>
+    </link>
+
+    <joint name="right_finger_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>right_finger_link</child>
+      <!-- Adjust this pose to accurately reflect the mechanical pivot point -->
+      <pose>-0.4021 -0.0667 -0.2831 0 0 0</pose>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>0.0</lower>
+          <upper>0.5</upper>
+          <effort>10.0</effort>
+          <velocity>1.0</velocity>
+        </limit>
+      </axis>
+    </joint>
+
+    <!-- Gripper payload attachment.
+         gz-sim 8 (Harmonic) has no <suppress_initial_attach>, so this joint is welded
+         the instant the world loads. simulator_bridge publishes on the detach topic at
+         startup to release it, then re-attaches on the attach topic once both finger
+         contact sensors report the same object. Re-attach welds at the object's
+         *current* pose relative to base_link, which is exactly the grasp pose.
+         One plugin instance is needed per graspable object, so there is one per Task 5
+         pickup below. Worlds that do not contain a given model simply never attach it
+         (suppress_child_warning keeps them quiet), which is what lets test_matsya.sdf
+         still work - it carries test_box and none of these.
+
+         Every name here is load-bearing three ways over: <child_model> must equal the
+         prop name in competition_config.yaml, and the topic must match both the gz side
+         of bridge_topics_thrusters.yaml and the key simulator_bridge builds its
+         publishers from. Rename in one place and you must rename in all four. -->
+    <plugin filename="gz-sim-detachable-joint-system"
+            name="gz::sim::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>test_box</child_model>
+      <child_link>box_link</child_link>
+      <detach_topic>/model/auv/joint/gripper_test_box_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/gripper_test_box_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/gripper_test_box_joint/state</output_topic>
+      <suppress_child_warning>true</suppress_child_warning>
+    </plugin>
+
+    <plugin filename="gz-sim-detachable-joint-system"
+            name="gz::sim::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>pickup_bandaid</child_model>
+      <child_link>pickup_link</child_link>
+      <detach_topic>/model/auv/joint/gripper_pickup_bandaid_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/gripper_pickup_bandaid_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/gripper_pickup_bandaid_joint/state</output_topic>
+      <suppress_child_warning>true</suppress_child_warning>
+    </plugin>
+
+    <plugin filename="gz-sim-detachable-joint-system"
+            name="gz::sim::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>pickup_plug</child_model>
+      <child_link>pickup_link</child_link>
+      <detach_topic>/model/auv/joint/gripper_pickup_plug_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/gripper_pickup_plug_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/gripper_pickup_plug_joint/state</output_topic>
+      <suppress_child_warning>true</suppress_child_warning>
+    </plugin>
+
+    <plugin filename="gz-sim-detachable-joint-system"
+            name="gz::sim::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>pickup_capsule</child_model>
+      <child_link>pickup_link</child_link>
+      <detach_topic>/model/auv/joint/gripper_pickup_capsule_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/gripper_pickup_capsule_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/gripper_pickup_capsule_joint/state</output_topic>
+      <suppress_child_warning>true</suppress_child_warning>
+    </plugin>
+
+    <plugin filename="gz-sim-detachable-joint-system"
+            name="gz::sim::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>pickup_screw</child_model>
+      <child_link>pickup_link</child_link>
+      <detach_topic>/model/auv/joint/gripper_pickup_screw_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/gripper_pickup_screw_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/gripper_pickup_screw_joint/state</output_topic>
+      <suppress_child_warning>true</suppress_child_warning>
+    </plugin>
+
+    <plugin
+    filename="gz-sim-joint-position-controller-system"
+    name="gz::sim::systems::JointPositionController">
+
+    <joint_name>right_finger_joint</joint_name>
+    
+    <!-- PID Controller Gains -->
+    <p_gain>10.0</p_gain>
+    <i_gain>0.1</i_gain>
+    <d_gain>0.01</d_gain>
+    <i_max>1.0</i_max>
+    <i_min>-1.0</i_min>
+    <cmd_max>1000</cmd_max>
+    <cmd_min>-1000</cmd_min>
+  </plugin>
+
+  <plugin 
+    filename="gz-sim-joint-position-controller-system" 
+    name="gz::sim::systems::JointPositionController">
+    
+    <joint_name>left_finger_joint</joint_name>
+    
+    <!-- PID Controller Gains -->
+    <p_gain>10.0</p_gain>
+    <i_gain>0.1</i_gain>
+    <d_gain>0.01</d_gain>
+    <i_max>1.0</i_max>
+    <i_min>-1.0</i_min>
+    <cmd_max>1000</cmd_max>
+    <cmd_min>-1000</cmd_min>
+  </plugin>
+  <plugin 
+    filename="gz-sim-contact-system" 
+    name="gz::sim::systems::Contact">
+  </plugin>
+  </model>
+</sdf>

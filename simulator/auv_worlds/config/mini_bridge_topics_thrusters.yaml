@@ -1,0 +1,188 @@
+#Thruster command topics to bridge from ROS to Gazebo. Each topic corresponds to a single thruster's commanded thrust value.
+- topic_name: /model/auv/joint/surge_front_left_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/surge_front_right_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/surge_back_left_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/surge_back_right_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/heave_left_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/heave_right_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+# Keyboard keypresses — bridged so simulator_bridge can do yaw-aware thrust allocation
+- ros_topic_name: "/keyboard/keypress"
+  gz_topic_name: "/keyboard/keypress"
+  ros_type_name: "std_msgs/msg/Int32"
+  gz_type_name: "gz.msgs.Int32"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+#Sensors that send data from Gazebo to ROS.
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/imu_1"
+  gz_topic_name: "/model/auv/imu_1"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/imu_2"
+  gz_topic_name: "/model/auv/imu_2"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/odometry"
+  gz_topic_name: "/model/auv/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/world/underwater_pool/dynamic_pose/info"
+  gz_topic_name: "/world/underwater_pool/dynamic_pose/info"
+  ros_type_name: "geometry_msgs/msg/PoseArray"
+  gz_type_name: "gz.msgs.Pose_V"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/pose"
+  gz_topic_name: "/model/auv/pose"
+  ros_type_name: "geometry_msgs/msg/PoseArray"
+  gz_type_name: "gz.msgs.Pose_V"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+# Front camera (RGBD)
+- ros_topic_name: "/model/auv/front_camera/image"
+  gz_topic_name: "/model/auv/front_camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/front_camera/depth_image"
+  gz_topic_name: "/model/auv/front_camera/depth_image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/front_camera/camera_info"
+  gz_topic_name: "/model/auv/front_camera/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/front_camera/points"
+  gz_topic_name: "/model/auv/front_camera/points"
+  ros_type_name: "sensor_msgs/msg/PointCloud2"
+  gz_type_name: "gz.msgs.PointCloudPacked"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  direction: GZ_TO_ROS
+
+# Bottom camera (RGB)
+# The bottom camera SDF uses base topic /model/auv/bottom_camera;
+# rgbd_camera publishes RGB frames on the /image subtopic.
+- ros_topic_name: "/model/auv/bottom_camera/image"
+  gz_topic_name: "/model/auv/bottom_camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  publisher_queue_size: 10  
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/bottom_camera/camera_info"
+  gz_topic_name: "/model/auv/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  direction: GZ_TO_ROS
+
+# --- ROS TO GZ ---
+
+- ros_topic_name: "/world/underwater_pool/wrench"
+  gz_topic_name: "/world/underwater_pool/wrench"
+  ros_type_name: "ros_gz_interfaces/msg/EntityWrench"
+  gz_type_name: "gz.msgs.EntityWrench"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/world/underwater_pool/wrench/persistent"
+  gz_topic_name: "/world/underwater_pool/wrench/persistent"
+  ros_type_name: "ros_gz_interfaces/msg/EntityWrench"
+  gz_type_name: "gz.msgs.EntityWrench"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  direction: ROS_TO_GZ
+
+
+# --- SERVICES (ROS calls Gazebo) ---
+
+- ros_service_name: "/world/underwater_pool/control"
+  gz_service_name: "/world/underwater_pool/control"
+  ros_type_name: "ros_gz_interfaces/srv/ControlWorld"
+  gz_req_type_name: "gz.msgs.WorldControl"
+  gz_rep_type_name: "gz.msgs.Boolean"
+
+- ros_service_name: "/world/underwater_pool/set_pose"
+  gz_service_name: "/world/underwater_pool/set_pose"
+  ros_type_name: "ros_gz_interfaces/srv/SetEntityPose"
+  gz_req_type_name: "gz.msgs.Pose"
+  gz_rep_type_name: "gz.msgs.Boolean"

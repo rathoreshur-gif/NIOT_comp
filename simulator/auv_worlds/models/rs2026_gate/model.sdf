@@ -1,0 +1,49 @@
+<sdf version='1.9'>
+  <model name='rs2026_gate'>
+    <static>true</static>
+    <link name='base_link'>
+      <inertial>
+        <pose>8.6159e-05 2.2529e-06 -0.26534 0 0 0</pose>
+        <mass>15.543</mass>
+        <inertia>
+          <ixx>3.2566</ixx>
+          <ixy>-1.1467e-05</ixy>
+          <ixz>-0.00030835</ixz>
+          <iyy>23.727</iyy>
+          <iyz>2.6926e-06</iyz>
+          <izz>20.475</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_gate/meshes/base_link.dae</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='base_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_gate/meshes/base_link.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+
+      <!-- Scoring: reports anything striking the gate frame. Mounted on the
+           prop rather than the vehicle so the signal is unambiguous - no need
+           to filter pool floor and wall contacts back out. -->
+      <sensor name='gate_contact_sensor' type='contact'>
+        <update_rate>30.0</update_rate>
+        <always_on>true</always_on>
+        <contact>
+          <collision>base_link_collision</collision>
+        </contact>
+      </sensor>
+
+    </link>
+  </model>
+</sdf>

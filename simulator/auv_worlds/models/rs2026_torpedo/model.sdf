@@ -1,0 +1,44 @@
+<sdf version='1.9'>
+  <model name='rs2026_torpedo'>
+    <static>true</static>
+
+    <!--
+      Static, collision-free torpedo target board. The AUV fires through
+      the openings without any reaction force on the prop.
+
+      Link pose recenters the model frame on the visible target, so yaw in
+      the world file rotates the torpedo about its own vertical axis.
+
+      Visual pose carries R = Rz(π/2)·Rx(π/2) so the mesh appears upright.
+    -->
+
+    <link name='base_link'>
+      <pose>0.732111 -0.007367 -0.221432 0 0 0</pose>
+
+      <inertial>
+        <pose>0.127055 1.073286 1.621449 0 0 1.5708</pose>
+        <mass>11.6979</mass>
+        <inertia>
+          <ixx>0.159463</ixx>
+          <ixy>-9.0771e-10</ixy>
+          <ixz>0.006781</ixz>
+          <iyy>0.347431</iyy>
+          <iyz>4.0684e-20</iyz>
+          <izz>0.201773</izz>
+        </inertia>
+      </inertial>
+
+      <visual name='base_link_visual'>
+        <pose>0 0 0 1.5708 0 1.5708</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_torpedo/meshes/base_link.glb</uri>
+          </mesh>
+        </geometry>
+        
+      </visual>
+    </link>
+
+  </model>
+</sdf>

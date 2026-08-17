@@ -1,0 +1,60 @@
+<sdf version='1.9'>
+  <!-- Task 5 octagon table: the mid box and the two image boards, and nothing
+       else. The four pickups are NOT drawn here. Each is spawned as its own
+       dynamic model (rs2026_pickup_{bandaid,plug,capsule,screw}, listed as props
+       in competition_config.yaml) so the gripper can actually take them off the
+       table; drawing them here as well would just double them up.
+
+       The mesh is exported from the CAD scene in glTF's Y-up convention, so both
+       the visual and the collision carry roll +90 deg to stand it up into SDF's
+       Z-up. The boards' textured faces are the +Y faces in the CAD frame, so the
+       roll points them at the sky for the down camera.
+
+       After the roll the table spans local Z -0.055747 .. +0.050 (the side boards
+       hang 5.7 mm below the mid box), which is exactly the minimum
+       competition_config.yaml negates to seat the model on the pool floor. Keep
+       the link origin here; do not bake the seating offset in twice. -->
+  <model name='rs2026_octogon'>
+    <static>true</static>
+    <link name='base_link'>
+      <inertial>
+        <pose>-0.73443 1.4352 1.2932 0 0 0</pose>
+        <mass>12.512</mass>
+        <inertia>
+          <ixx>0.59399</ixx>
+          <ixy>8.3267e-16</ixy>
+          <ixz>1.2103e-16</ixz>
+          <iyy>0.59399</iyy>
+          <iyz>-5.3618e-17</iyz>
+          <izz>1.1789</izz>
+        </inertia>
+      </inertial>
+
+      <!-- Collides against the same mesh it draws, so the top face is flat.
+           The old collision used octagon_table.glb, which has all four pickups
+           modelled into it - a dynamic pickup dropped onto its own CAD spot
+           landed on an invisible 0.060 m copy of itself and sat proud of the
+           table. Both meshes have the same -0.055747 minimum, so the seating
+           pose in competition_config.yaml is unaffected. -->
+      <collision name='base_link_collision'>
+        <pose>0 0 0 1.570796 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_octogon/meshes/ocatgon_table.glb</uri>
+          </mesh>
+        </geometry>
+      </collision>
+
+      <visual name='base_link_visual'>
+        <pose>0 0 0 1.570796 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_octogon/meshes/ocatgon_table.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

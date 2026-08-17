@@ -1,0 +1,91 @@
+# The competition contract between the simulator and the competitor container.
+#
+#   simulator      ROS_DOMAIN_ID=0
+#   competitor     ROS_DOMAIN_ID=1
+#
+# This file is the *only* path between those two domains, so it doubles as the
+# whitelist: a topic that is not listed here does not reach the competitor. That
+# is deliberate. /scoring/*, the ground-truth flaggers, the raw /model/auv/*
+# Gazebo topics and the /simulator/* services all stay inside domain 0.
+#
+# Mounted read-only into the domain_bridge service, so editing the whitelist
+# needs only `docker compose restart domain_bridge`, not an image rebuild.
+#
+#   ros2 run domain_bridge domain_bridge /etc/matsya/domain_bridge.yaml
+#
+# Every entry names its `type` explicitly. Without it the bridge waits to
+# discover a live publisher before it can build the endpoint, and the competitor
+# container starts well before Gazebo has finished coming up.
+name: matsya_competition_bridge
+
+topics:
+
+  # --- simulator -> competitor -------------------------------------------
+
+  # Sim time. The competitor runs with use_sim_time:=true, so without this its
+  # clock never advances and every timer stalls.
+  /clock:
+    type: rosgraph_msgs/msg/Clock
+    from_domain: 0
+    to_domain: 1
+
+  # Fused vehicle state, ~100 Hz. NOTE: simulator_bridge publishes position in
+  # CENTIMETRES (it multiplies by 100), relative to a reset origin, with Y and Z
+  # sign-flipped from Gazebo. Competitor code has to expect that.
+  /localization/pose:
+    type: auv_msgs/msg/AuvState
+    from_domain: 0
+    to_domain: 1
+
+  # Cameras. ~15 Hz at 700x400 after the tuning described in PERFORMANCE.md.
+  #
+  # On the QoS override: domain_bridge auto-matches any field left unspecified.
+  # Setting only history/depth keeps reliability matched to the publisher
+  # (simulator_bridge publishes these RELIABLE at depth 10), so a competitor
+  # using a plain default subscription still connects, while depth 1 stops a
+  # queue building up across the bridge.
+  #
+  # If image latency becomes the bottleneck, add `reliability: best_effort`
+  # here — but that then REQUIRES competitors to subscribe best-effort, which is
+  # why it is not the default.
+  /front_camera/image_raw:
+    type: sensor_msgs/msg/Image
+    from_domain: 0
+    to_domain: 1
+    qos:
+      history: keep_last
+      depth: 1
+
+  /bottom_camera/image_raw:
+    type: sensor_msgs/msg/Image
+    from_domain: 0
+    to_domain: 1
+    qos:
+      history: keep_last
+      depth: 1
+
+  /front_camera/oakd_frame:
+    type: auv_msgs/msg/StereoVisionFrame
+    from_domain: 0
+    to_domain: 1
+    qos:
+      history: keep_last
+      depth: 1
+
+  /front_camera/rgbd_frame:
+    type: auv_msgs/msg/RGBDFrame
+    from_domain: 0
+    to_domain: 1
+    qos:
+      history: keep_last
+      depth: 1
+
+  # --- competitor -> simulator -------------------------------------------
+
+  # The only thing the competitor is allowed to actuate. simulator_bridge fans
+  # this out to the eight /model/auv/joint/*/cmd_thrust topics, negating the
+  # heave values on the way.
+  /controller/thruster_forces:
+    type: auv_msgs/msg/ThrusterForces
+    from_domain: 1
+    to_domain: 0

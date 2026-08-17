@@ -1,0 +1,14 @@
+# Backup of sign image visual poses in rs2026_gate/model.sdf
+# pose format: [x, y, z, roll, pitch, yaw]
+# size format: [width, height, depth]
+
+signs:
+  survey_repair:
+    texture: Task1_SurveyRepair_Fixed.png
+    pose: [0.76, 0.45, -0.026, 0, 0, -1.5708]
+    size: [0.3, 0.3, 0.002]
+
+  search_rescue:
+    texture: Task1_SearchRescue_Fixed.png
+    pose: [-0.76, 0.45, -0.026, 0, 0, -1.5708]
+    size: [0.3, 0.3, 0.002]

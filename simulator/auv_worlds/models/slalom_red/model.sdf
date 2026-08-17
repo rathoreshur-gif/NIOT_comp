@@ -1,0 +1,41 @@
+<sdf version='1.9'>
+  <model name='slalom_red'>
+    <static>true</static>
+    <link name='base_link'>
+      <inertial>
+        <pose>-4.6434e-19 0.45 -4.9507e-19 0 0 0</pose>
+        <mass>1.8241</mass>
+        <inertia>
+          <ixx>0.12342</ixx>
+          <ixy>2.5172e-35</ixy>
+          <ixz>4.1934e-37</ixz>
+          <iyy>0.00058843</iyy>
+          <iyz>-1.0778e-35</iyz>
+          <izz>0.12342</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://slalom_red/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='base_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://slalom_red/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1 0 0 1</diffuse>
+          <ambient>1 0 0 1</ambient>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

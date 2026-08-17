@@ -1,0 +1,573 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="auv">
+
+    <link name="base_link">
+
+      <inertial>
+        <mass>42.0</mass>
+        <inertia>
+          <ixx>0.5</ixx>  <ixy>0</ixy>  <ixz>0</ixz>
+          <iyy>7.90</iyy>   <iyz>0</iyz>
+          <izz>7.90</izz>
+        </inertia>
+      </inertial>
+
+      <!-- Buoyancy / contact box — oversized for correct net buoyancy.
+           CB 5 mm above CG for gentle passive righting moment.        -->
+      <collision name="collision">
+        <pose>0 0 0.03 0 0 0</pose>
+        <geometry>
+          <box><size>1.5 0.1665 0.1665</size></box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <kp>200000</kp><kd>100</kd>
+              <max_vel>0.5</max_vel><min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <friction><ode><mu>0.1</mu><mu2>0.1</mu2></ode></friction>
+        </surface>
+      </collision>
+
+      <visual name="body_mesh">
+        <pose>-0.687 1.259 -0.766 0 0 3.14159</pose>
+        <geometry>
+          <mesh>
+            <uri>model://auv/meshes/base_link.STL</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+        <material>
+          <ambient>0.8 0.8 0.9 1</ambient>
+          <diffuse>0.7 0.7 0.8 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+        </material>
+      </visual>
+
+      <!-- IMU 1 — MPU-6050 worst-case (no factory cal, high-drift unit).
+           Gyro ARW ~0.6 °/√s → stddev ≈ 0.010 rad/s at 100 Hz.
+           Gyro turn-on bias scatter ≈ ±360 °/hr → bias_stddev ≈ 0.006 rad/s.
+           Accel noise density ~300 μg/√Hz → stddev ≈ 0.15 m/s² at 100 Hz.
+           Accel zero-g offset (worst units) up to 0.025 g → bias_mean 0.25 m/s². -->
+      <sensor name="imu_sensor" type="imu">
+        <always_on>1</always_on>
+        <update_rate>100</update_rate>
+        <topic>/model/auv/imu</topic>
+        <imu>
+          <angular_velocity>
+            <x><noise type="gaussian"><mean>0</mean><stddev>0.010</stddev><bias_mean>0.015</bias_mean><bias_stddev>0.006</bias_stddev></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>0.010</stddev><bias_mean>-0.012</bias_mean><bias_stddev>0.006</bias_stddev></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.010</stddev><bias_mean>0.010</bias_mean><bias_stddev>0.006</bias_stddev></noise></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><noise type="gaussian"><mean>0</mean><stddev>0.15</stddev><bias_mean>0.25</bias_mean><bias_stddev>0.10</bias_stddev></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>0.15</stddev><bias_mean>-0.20</bias_mean><bias_stddev>0.10</bias_stddev></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.15</stddev><bias_mean>0.30</bias_mean><bias_stddev>0.10</bias_stddev></noise></z>
+          </linear_acceleration>
+        </imu>
+      </sensor>
+
+      <!-- IMU 2 — second MPU-6050, different unit, independent bias offsets.
+           Same noise floor but distinct turn-on biases to simulate two
+           uncorrelated bad sensors for sensor-fusion redundancy testing. -->
+      <sensor name="imu_sensor_2" type="imu">
+        <always_on>1</always_on>
+        <update_rate>100</update_rate>
+        <topic>/model/auv/imu2</topic>
+        <imu>
+          <angular_velocity>
+            <x><noise type="gaussian"><mean>0</mean><stddev>0.010</stddev><bias_mean>-0.018</bias_mean><bias_stddev>0.006</bias_stddev></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>0.010</stddev><bias_mean>0.014</bias_mean><bias_stddev>0.006</bias_stddev></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.010</stddev><bias_mean>-0.008</bias_mean><bias_stddev>0.006</bias_stddev></noise></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><noise type="gaussian"><mean>0</mean><stddev>0.15</stddev><bias_mean>-0.22</bias_mean><bias_stddev>0.10</bias_stddev></noise></x>
+            <y><noise type="gaussian"><mean>0</mean><stddev>0.15</stddev><bias_mean>0.28</bias_mean><bias_stddev>0.10</bias_stddev></noise></y>
+            <z><noise type="gaussian"><mean>0</mean><stddev>0.15</stddev><bias_mean>-0.18</bias_mean><bias_stddev>0.10</bias_stddev></noise></z>
+          </linear_acceleration>
+        </imu>
+      </sensor>
+
+      <!-- Front camera — RGBD, 10 Hz -->
+      <sensor name="front_camera" type="rgbd_camera">
+        <pose>1.5 0 0.5 0 0 0</pose>
+        <topic>/model/auv/front_camera</topic>
+        <camera>
+          <horizontal_fov>1.5708</horizontal_fov>
+          <image>
+            <width>1280</width>
+            <height>720</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>30</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.02</mean>
+            <stddev>0.01</stddev>
+            <bias_mean>0.03</bias_mean>
+            <bias_stddev>0.005</bias_stddev>
+          </noise>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>10</update_rate>
+        <visualize>false</visualize>
+      </sensor>
+
+      <!-- Bottom camera — RGB, 10 Hz -->
+      <sensor name="bottom_camera" type="camera">
+        <pose>0 0 -0.3 0 1.5708 0</pose>
+        <topic>/model/auv/bottom_camera/image</topic>
+        <camera>
+          <horizontal_fov>1.5708</horizontal_fov>
+          <image>
+            <width>1280</width>
+            <height>720</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>50</far>
+          </clip>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>10</update_rate>
+        <visualize>false</visualize>
+      </sensor>
+
+    </link>
+
+
+    <!-- ============================================================
+         Hydrodynamics: roll damping re-tuned for RTF=1.0
+         ============================================================ -->
+    <plugin filename="ignition-gazebo-hydrodynamics-system"
+            name="ignition::gazebo::systems::Hydrodynamics">
+      <link_name>base_link</link_name>
+
+      <!-- Added mass -->
+      <xDotU>-0.196</xDotU>
+      <yDotV>-9.31</yDotV>
+      <zDotW>-9.31</zDotW>
+      <kDotP>-0.1</kDotP>
+      <mDotQ>-1.84</mDotQ>
+      <nDotR>-1.84</nDotR>
+
+      <!-- Linear damping -->
+      <xU>-130.7</xU>
+      <yV>-116.0</yV>
+      <zW>-116.0</zW>
+      <kP>-9.5</kP>
+      <mQ>-9.50</mQ>
+      <nR>-9.50</nR>
+
+      <!-- Quadratic damping -->
+      <xUabsU>-14.5</xUabsU>
+      <yVabsV>-216.0</yVabsV>
+      <zWabsW>-350.0</zWabsW>
+      <kPabsP>-2.0  </kPabsP>
+      <mQabsQ>-18.0</mQabsQ>
+      <nRabsR>-18.0</nRabsR>
+
+    </plugin>
+
+
+    <!-- ============================================================
+         POSE PUBLISHER — global world-frame position, full 6DOF, 100 Hz
+         ============================================================ -->
+    <plugin filename="ignition-gazebo-pose-publisher-system"
+            name="ignition::gazebo::systems::PosePublisher">
+      <publish_link_pose>true</publish_link_pose>
+      <publish_sensor_pose>false</publish_sensor_pose>
+      <publish_collision_pose>false</publish_collision_pose>
+      <publish_visual_pose>false</publish_visual_pose>
+      <link_name>base_link</link_name>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <update_frequency>20</update_frequency>
+      <frame_id>world</frame_id>
+    </plugin>
+
+
+    <!-- ============================================================
+         ODOMETRY PUBLISHER — full 3D, 50 Hz
+         ============================================================ -->
+    <plugin filename="ignition-gazebo-odometry-publisher-system"
+            name="ignition::gazebo::systems::OdometryPublisher">
+      <odom_frame>odom</odom_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+      <dimensions>3</dimensions>
+      <degrees>true</degrees>
+      <publish_odometry>true</publish_odometry>
+      <publish_tf>true</publish_tf>
+      <update_frequency>20</update_frequency>
+    </plugin>
+
+
+    <!-- ============================================================
+         THRUSTERS — 8 × ignition-gazebo-thruster-system
+         ============================================================
+         Surge thrusters (horizontal, angled ±45°):
+           surge_front_left / surge_back_right  yaw= 0.785 → axis [0.707, -0.707, 0]
+           surge_front_right / surge_back_left  yaw=-0.785 → axis [0.707,  0.707, 0]
+
+         Heave thrusters (vertical, pitch=-90°), one at each corner:
+           axis in model frame = [0, 0, 1]  (positive cmd = upward force)
+
+         Gz topic per thruster:
+           /model/auv/joint/{name}_joint/cmd_thrust  (ignition.msgs.Double, Newtons)
+         ============================================================ -->
+
+    <!-- surge_front_left -->
+    <link name="surge_front_left_link">
+      <pose>0.402 -0.244 0.0 0.0 0.0 0.785</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.000001</iyy><iyz>0</iyz><izz>0.000001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="surge_front_left_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>surge_front_left_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0.707 -0.707 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>surge_front_left_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <!-- surge_front_right -->
+    <link name="surge_front_right_link">
+      <pose>0.402 0.244 0.0 0.0 0.0 -0.785</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.000001</iyy><iyz>0</iyz><izz>0.000001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="surge_front_right_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>surge_front_right_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0.707 0.707 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>surge_front_right_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <!-- surge_back_left -->
+    <link name="surge_back_left_link">
+      <pose>-0.402 -0.244 0.0 0.0 0.0 -0.785</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.000001</iyy><iyz>0</iyz><izz>0.000001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="surge_back_left_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>surge_back_left_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0.707 0.707 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>surge_back_left_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <!-- surge_back_right -->
+    <link name="surge_back_right_link">
+      <pose>-0.402 0.244 0.0 0.0 0.0 0.785</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.000001</iyy><iyz>0</iyz><izz>0.000001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="surge_back_right_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>surge_back_right_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0.707 -0.707 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>surge_back_right_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <!-- heave_front_left -->
+    <link name="heave_front_left_link">
+      <pose>0.226 -0.301 0.0 0.0 1.57 0.0</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.000001</iyy><iyz>0</iyz><izz>0.000001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="heave_front_left_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>heave_front_left_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>heave_front_left_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <!-- heave_front_right -->
+    <link name="heave_front_right_link">
+      <pose>0.226 0.301 0.0 0.0 1.57 0.0</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.000001</iyy><iyz>0</iyz><izz>0.000001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="heave_front_right_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>heave_front_right_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>heave_front_right_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <!-- heave_back_left -->
+    <link name="heave_back_left_link">
+      <pose>-0.226 -0.301 0.0 0.0 1.57 0.0</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.000001</iyy><iyz>0</iyz><izz>0.000001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="heave_back_left_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>heave_back_left_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>heave_back_left_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <!-- heave_back_right -->
+    <link name="heave_back_right_link">
+      <pose>-0.226 0.301 0.0 0.0 1.57 0.0</pose>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.000001</iyy><iyz>0</iyz><izz>0.000001</izz></inertia>
+      </inertial>
+    </link>
+    <joint name="heave_back_right_joint" type="revolute">
+      <parent>base_link</parent>
+      <child>heave_back_right_link</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper></limit>
+      </axis>
+    </joint>
+    <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
+      <joint_name>heave_back_right_joint</joint_name>
+      <thrust_coefficient>0.0001</thrust_coefficient>
+      <fluid_density>1000</fluid_density>
+      <propeller_diameter>0.1</propeller_diameter>
+    </plugin>
+
+    <!-- ============================================================
+         DETACHABLE PAYLOADS — 2 × markers, 2 × torpedoes
+
+         Marker poses are 0.5 m forward of the bottom camera.
+         Torpedo poses are 0.5 m below the front camera.
+         Detach with gz/ROS Bool messages on each detach_topic.
+         ============================================================ -->
+
+    <model name="marker_left">
+      <pose>0.5 -0.08 -0.3 0 0 0</pose>
+      <link name="marker_left_link">
+        <inertial>
+          <mass>0.0041887902047863896</mass>
+          <inertia><ixx>1.6755160819145599e-07</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.6755160819145599e-07</iyy><iyz>0</iyz><izz>1.6755160819145599e-07</izz></inertia>
+        </inertial>
+        <collision name="marker_left_collision">
+          <geometry>
+            <mesh>
+              <uri>model://marker/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="marker_left_visual">
+          <geometry>
+            <mesh>
+              <uri>model://marker/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <material>
+            <ambient>0.990196 1 1 1</ambient>
+            <diffuse>0.990196 1 1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <plugin filename="ignition-gazebo-detachable-joint-system"
+            name="ignition::gazebo::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>marker_left</child_model>
+      <child_link>marker_left_link</child_link>
+      <detach_topic>/model/auv/joint/marker_left_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/marker_left_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/marker_left_joint/state</output_topic>
+    </plugin>
+
+    <model name="marker_right">
+      <pose>0.5 0.08 -0.3 0 0 0</pose>
+      <link name="marker_right_link">
+        <inertial>
+          <mass>0.0041887902047863896</mass>
+          <inertia><ixx>1.6755160819145599e-07</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.6755160819145599e-07</iyy><iyz>0</iyz><izz>1.6755160819145599e-07</izz></inertia>
+        </inertial>
+        <collision name="marker_right_collision">
+          <geometry>
+            <mesh>
+              <uri>model://marker/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="marker_right_visual">
+          <geometry>
+            <mesh>
+              <uri>model://marker/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <material>
+            <ambient>0.990196 1 1 1</ambient>
+            <diffuse>0.990196 1 1 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <plugin filename="ignition-gazebo-detachable-joint-system"
+            name="ignition::gazebo::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>marker_right</child_model>
+      <child_link>marker_right_link</child_link>
+      <detach_topic>/model/auv/joint/marker_right_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/marker_right_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/marker_right_joint/state</output_topic>
+    </plugin>
+
+    <model name="torpedo_left">
+      <pose>1.5 -0.08 0.0 0 0 0</pose>
+      <link name="torpedo_left_link">
+        <inertial>
+          <mass>0.001</mass>
+          <inertia><ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.000001</iyy><iyz>0</iyz><izz>0.000001</izz></inertia>
+        </inertial>
+        <collision name="torpedo_left_collision">
+          <geometry>
+            <mesh>
+              <uri>model://torPEDO/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="torpedo_left_visual">
+          <geometry>
+            <mesh>
+              <uri>model://torPEDO/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <material>
+            <ambient>0.792157 0.819608 0.933333 1</ambient>
+            <diffuse>0.792157 0.819608 0.933333 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <plugin filename="ignition-gazebo-detachable-joint-system"
+            name="ignition::gazebo::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>torpedo_left</child_model>
+      <child_link>torpedo_left_link</child_link>
+      <detach_topic>/model/auv/joint/torpedo_left_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/torpedo_left_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/torpedo_left_joint/state</output_topic>
+    </plugin>
+
+    <model name="torpedo_right">
+      <pose>1.5 0.08 0.0 0 0 0</pose>
+      <link name="torpedo_right_link">
+        <inertial>
+          <mass>0.001</mass>
+          <inertia><ixx>0.000001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.000001</iyy><iyz>0</iyz><izz>0.000001</izz></inertia>
+        </inertial>
+        <collision name="torpedo_right_collision">
+          <geometry>
+            <mesh>
+              <uri>model://torPEDO/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+        </collision>
+        <visual name="torpedo_right_visual">
+          <geometry>
+            <mesh>
+              <uri>model://torPEDO/meshes/base_link.STL</uri>
+              <scale>1 1 1</scale>
+            </mesh>
+          </geometry>
+          <material>
+            <ambient>0.792157 0.819608 0.933333 1</ambient>
+            <diffuse>0.792157 0.819608 0.933333 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+    <plugin filename="ignition-gazebo-detachable-joint-system"
+            name="ignition::gazebo::systems::DetachableJoint">
+      <parent_link>base_link</parent_link>
+      <child_model>torpedo_right</child_model>
+      <child_link>torpedo_right_link</child_link>
+      <detach_topic>/model/auv/joint/torpedo_right_joint/detach</detach_topic>
+      <attach_topic>/model/auv/joint/torpedo_right_joint/attach</attach_topic>
+      <output_topic>/model/auv/joint/torpedo_right_joint/state</output_topic>
+    </plugin>
+
+  </model>
+</sdf>

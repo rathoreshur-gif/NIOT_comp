@@ -1,0 +1,526 @@
+
+#Thruster command topics to bridge from ROS to Gazebo. Each topic corresponds to a single thruster's commanded thrust value.
+- topic_name: /model/auv/joint/surge_front_left_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/surge_front_right_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/surge_back_left_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/surge_back_right_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/heave_front_left_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/heave_front_right_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/heave_back_left_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+- topic_name: /model/auv/joint/heave_back_right_joint/cmd_thrust
+  ros_type_name: std_msgs/msg/Float64
+  gz_type_name: gz.msgs.Double
+  direction: ROS_TO_GZ
+  lazy: true
+
+# Keyboard keypresses — bridged so simulator_bridge can do yaw-aware thrust allocation
+- ros_topic_name: "/keyboard/keypress"
+  gz_topic_name: "/keyboard/keypress"
+  ros_type_name: "std_msgs/msg/Int32"
+  gz_type_name: "gz.msgs.Int32"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+#Sensors that send data from Gazebo to ROS.
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/imu_1"
+  gz_topic_name: "/model/auv/imu_1"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/imu_2"
+  gz_topic_name: "/model/auv/imu_2"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/odometry"
+  gz_topic_name: "/model/auv/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/world/underwater_pool/dynamic_pose/info"
+  gz_topic_name: "/world/underwater_pool/dynamic_pose/info"
+  ros_type_name: "geometry_msgs/msg/PoseArray"
+  gz_type_name: "gz.msgs.Pose_V"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/pose"
+  gz_topic_name: "/model/auv/pose"
+  ros_type_name: "geometry_msgs/msg/PoseArray"
+  gz_type_name: "gz.msgs.Pose_V"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+# Front camera (RGBD)
+- ros_topic_name: "/model/auv/front_camera/image"
+  gz_topic_name: "/model/auv/front_camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/front_camera/depth_image"
+  gz_topic_name: "/model/auv/front_camera/depth_image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/front_camera/camera_info"
+  gz_topic_name: "/model/auv/front_camera/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+# The rgbd_camera's point cloud is deliberately NOT bridged. Nothing subscribes
+# to it: simulator_bridge takes image + depth_image instead. It was `lazy: true`,
+# so it cost nothing while unsubscribed - removing it did not change RTF - but at
+# the old resolution any casual `ros2 topic echo` pulled 26.9 MB per message
+# (~62 MB/s) and would stall the machine. Re-add this block if a competitor stack
+# genuinely needs /model/auv/front_camera/points.
+
+# Bottom camera (RGB)
+# Regular camera sensors publish the image directly to <topic> (not <topic>/image)
+# and camera_info to /model/auv/camera_info (Gazebo default path)
+- ros_topic_name: "/model/auv/bottom_camera/image"
+  gz_topic_name: "/model/auv/bottom_camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/bottom_camera/camera_info"
+  gz_topic_name: "/model/auv/bottom_camera/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+# --- ROS TO GZ ---
+
+- ros_topic_name: "/world/underwater_pool/wrench"
+  gz_topic_name: "/world/underwater_pool/wrench"
+  ros_type_name: "ros_gz_interfaces/msg/EntityWrench"
+  gz_type_name: "gz.msgs.EntityWrench"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/world/underwater_pool/wrench/persistent"
+  gz_topic_name: "/world/underwater_pool/wrench/persistent"
+  ros_type_name: "ros_gz_interfaces/msg/EntityWrench"
+  gz_type_name: "gz.msgs.EntityWrench"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  direction: ROS_TO_GZ
+
+
+# --- SERVICES (ROS calls Gazebo) ---
+
+- ros_service_name: "/world/underwater_pool/control"
+  gz_service_name: "/world/underwater_pool/control"
+  ros_type_name: "ros_gz_interfaces/srv/ControlWorld"
+  gz_req_type_name: "gz.msgs.WorldControl"
+  gz_rep_type_name: "gz.msgs.Boolean"
+
+- ros_service_name: "/world/underwater_pool/set_pose"
+  gz_service_name: "/world/underwater_pool/set_pose"
+  ros_type_name: "ros_gz_interfaces/srv/SetEntityPose"
+  gz_req_type_name: "gz.msgs.Pose"
+  gz_rep_type_name: "gz.msgs.Boolean"
+
+
+# --- Contact Sensors (GZ to ROS) ---
+- ros_topic_name: "/model/auv/left_finger_contact"
+  gz_topic_name: "/world/underwater_pool/model/auv/link/left_finger_link/sensor/left_finger_contact_sensor/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/right_finger_contact"
+  gz_topic_name: "/world/underwater_pool/model/auv/link/right_finger_link/sensor/right_finger_contact_sensor/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+# --- Gripper Joint Commands (ROS to GZ) ---
+- ros_topic_name: "/model/m7urdfnew_sdf_package/joint/left_finger_joint/cmd_pos"  
+  gz_topic_name: "/model/auv/joint/left_finger_joint/0/cmd_pos" 
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/m7urdfnew_sdf_package/joint/right_finger_joint/cmd_pos"
+  gz_topic_name: "/model/auv/joint/right_finger_joint/0/cmd_pos"
+  ros_type_name: "std_msgs/msg/Float64"
+  gz_type_name: "gz.msgs.Double"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: ROS_TO_GZ
+
+# --- Gripper DetachableJoint (payload attach / release) ---
+# One attach/detach/state triple per graspable object, matching the one
+# DetachableJoint instance each of them gets in m7urdfnew_sdf_package/model.sdf.
+# The ROS side is namespaced by object - /model/auv/gripper/<object>/... - and
+# simulator_bridge builds its publishers straight from that name, so the object
+# names here, the <child_model> in model.sdf and the prop names in
+# competition_config.yaml all have to agree.
+#
+# Not lazy: simulator_bridge must be able to publish the startup release before the
+# initially-welded joints have a chance to drag the AUV around.
+- ros_topic_name: "/model/auv/gripper/test_box/attach"
+  gz_topic_name: "/model/auv/joint/gripper_test_box_joint/attach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/auv/gripper/test_box/detach"
+  gz_topic_name: "/model/auv/joint/gripper_test_box_joint/detach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/auv/gripper/pickup_bandaid/attach"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_bandaid_joint/attach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/auv/gripper/pickup_bandaid/detach"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_bandaid_joint/detach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/auv/gripper/pickup_plug/attach"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_plug_joint/attach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/auv/gripper/pickup_plug/detach"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_plug_joint/detach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/auv/gripper/pickup_capsule/attach"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_capsule_joint/attach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/auv/gripper/pickup_capsule/detach"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_capsule_joint/detach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/auv/gripper/pickup_screw/attach"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_screw_joint/attach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/auv/gripper/pickup_screw/detach"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_screw_joint/detach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+# --- Water disturbance ---
+# Consumed by the Hydrodynamics plugin, which subscribes to the bare /ocean_current
+# (no <namespace> set on the plugin). Drag is then computed from the vehicle's
+# velocity relative to this water velocity.
+- ros_topic_name: "/model/auv/ocean_current"
+  gz_topic_name: "/ocean_current"
+  ros_type_name: "geometry_msgs/msg/Vector3"
+  gz_type_name: "gz.msgs.Vector3d"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+# Gazebo echoes "attached" / "detached" on these whenever a joint changes state.
+# A joint whose child model is absent from the world never reports at all, which
+# is how simulator_bridge tells which of the five actually exist.
+- ros_topic_name: "/model/auv/gripper/test_box/joint_state"
+  gz_topic_name: "/model/auv/joint/gripper_test_box_joint/state"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/gripper/pickup_bandaid/joint_state"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_bandaid_joint/state"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/gripper/pickup_plug/joint_state"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_plug_joint/state"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/gripper/pickup_capsule/joint_state"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_capsule_joint/state"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/gripper/pickup_screw/joint_state"
+  gz_topic_name: "/model/auv/joint/gripper_pickup_screw_joint/state"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+# --- Scoring contact sensors (GZ to ROS) ---
+# Gate frame strikes. The gz topic embeds the model INSTANCE name, which comes
+# from tasks.gate.props[].name in competition_config.yaml - rename the prop there
+# and this has to follow.
+- ros_topic_name: "/model/task1_gate/contact"
+  gz_topic_name: "/world/underwater_pool/model/task1_gate/link/base_link/sensor/gate_contact_sensor/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+# Whole-hull contacts, for props too numerous to instrument one by one.
+- ros_topic_name: "/model/auv/hull_contact"
+  gz_topic_name: "/world/underwater_pool/model/auv/link/base_link/sensor/hull_contact_sensor/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+# --- Scoreboard feed for the Gazebo GUI panel (ROS to GZ) ---
+- ros_topic_name: "/scoring/display"
+  gz_topic_name: "/scoring/display"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+# --- Marker droppers (ROS to GZ) ---
+# The DetachableJoint plugins for the two markers are declared in the AUV model
+# and auto-attach at world load, so the markers ride along until dropped.
+- ros_topic_name: "/model/auv/marker_left/drop"
+  gz_topic_name: "/model/auv/joint/marker_left_joint/detach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/model/auv/marker_right/drop"
+  gz_topic_name: "/model/auv/joint/marker_right_joint/detach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+# --- Bin contact sensors (GZ to ROS) ---
+# One per bin. The contact message carries both collision names and the world
+# contact position, so the scorer learns which bin, which marker, and exactly
+# where they touched - enough to reject a glancing hit on the outside.
+- ros_topic_name: "/model/task3_bins/box_1/contact"
+  gz_topic_name: "/world/underwater_pool/model/task3_bins/link/box_1/sensor/box_1_contact_sensor/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/task3_bins/box_2/contact"
+  gz_topic_name: "/world/underwater_pool/model/task3_bins/link/box_2/sensor/box_2_contact_sensor/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/task3_bins/box_3/contact"
+  gz_topic_name: "/world/underwater_pool/model/task3_bins/link/box_3/sensor/box_3_contact_sensor/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/task3_bins/box_4/contact"
+  gz_topic_name: "/world/underwater_pool/model/task3_bins/link/box_4/sensor/box_4_contact_sensor/contact"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+# --- Teleop panel <-> teleop node ---
+- ros_topic_name: "/teleop/status"
+  gz_topic_name: "/teleop/status"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+- ros_topic_name: "/teleop/command"
+  gz_topic_name: "/teleop/command"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+# Keys held right now, published at 50 Hz by the AuvTeleop panel. This is what
+# makes hold-to-move possible: KeyPublisher never reports a release.
+- ros_topic_name: "/teleop/keys"
+  gz_topic_name: "/teleop/keys"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS

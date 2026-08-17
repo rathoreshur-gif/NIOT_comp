@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/Scoreboard">
+    <file>Scoreboard.qml</file>
+  </qresource>
+</RCC>

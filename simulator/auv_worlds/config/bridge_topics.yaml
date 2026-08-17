@@ -1,0 +1,119 @@
+# ROS <-> Ignition Gazebo bridge topic definitions
+# lazy: true means the bridge only activates when there is an active ROS subscriber/publisher
+# Selective activation is controlled by simulator_bridge.py and vision nodes
+
+# --- GZ TO ROS ---
+
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/imu"
+  gz_topic_name: "/model/auv/imu"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/odometry"
+  gz_topic_name: "/model/auv/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/world/underwater_pool/dynamic_pose/info"
+  gz_topic_name: "/world/underwater_pool/dynamic_pose/info"
+  ros_type_name: "geometry_msgs/msg/PoseArray"
+  gz_type_name: "gz.msgs.Pose_V"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/pose"
+  gz_topic_name: "/model/auv/pose"
+  ros_type_name: "geometry_msgs/msg/PoseArray"
+  gz_type_name: "gz.msgs.Pose_V"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+# Front camera (RGBD)
+- ros_topic_name: "/model/auv/front_camera/image"
+  gz_topic_name: "/model/auv/front_camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/front_camera/depth_image"
+  gz_topic_name: "/model/auv/front_camera/depth_image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/front_camera/camera_info"
+  gz_topic_name: "/model/auv/front_camera/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/front_camera/points"
+  gz_topic_name: "/model/auv/front_camera/points"
+  ros_type_name: "sensor_msgs/msg/PointCloud2"
+  gz_type_name: "gz.msgs.PointCloudPacked"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+# Bottom camera (RGB)
+# Regular camera sensors publish the image directly to <topic> (not <topic>/image)
+# and camera_info to /model/auv/camera_info (Gazebo default path)
+- ros_topic_name: "/model/auv/bottom_camera/image"
+  gz_topic_name: "/model/auv/bottom_camera"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/auv/bottom_camera/camera_info"
+  gz_topic_name: "/model/auv/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: GZ_TO_ROS
+
+# --- ROS TO GZ ---
+
+- ros_topic_name: "/world/underwater_pool/wrench/persistent"
+  gz_topic_name: "/world/underwater_pool/wrench/persistent"
+  ros_type_name: "ros_gz_interfaces/msg/EntityWrench"
+  gz_type_name: "gz.msgs.EntityWrench"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: true
+  direction: ROS_TO_GZ

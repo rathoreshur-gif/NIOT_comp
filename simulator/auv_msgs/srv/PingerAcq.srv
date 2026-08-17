@@ -1,0 +1,4 @@
+float64 frequency
+---
+auv_msgs/Pose pose
+bool data_valid

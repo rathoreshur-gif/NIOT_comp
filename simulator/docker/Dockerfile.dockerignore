@@ -1,0 +1,25 @@
+# Build context is the repository root, so this prunes it down to the five
+# packages the simulator image actually builds. BuildKit picks up
+# <dockerfile>.dockerignore.
+
+# The competitor container builds from this same context. Without this line every
+# controller edit would land in the simulator image's context and invalidate its
+# cache, forcing a ~15 min rebuild for a change it never uses.
+competitor/
+
+# Run artefacts from previous runs: bind-mounted at runtime, never built in.
+.docker-runs/
+
+**/.git
+**/.github
+**/__pycache__
+**/*.pyc
+**/build
+**/install
+**/log
+**/*.zip
+
+.vscode
+.claude
+.agents
+.codex

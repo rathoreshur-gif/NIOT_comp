@@ -1,0 +1,10 @@
+# Goal definition
+string scan_type
+
+---
+# Result definition
+bool success
+
+---
+# Feedback definition
+float64 progress

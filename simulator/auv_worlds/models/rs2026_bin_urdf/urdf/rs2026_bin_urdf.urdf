@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="rs2026_bin_urdf">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="1.0204 1.2699 0.28257"
+        rpy="0 0 0" />
+      <mass
+        value="11.751" />
+      <inertia
+        ixx="0.057018"
+        ixy="1.9787E-10"
+        ixz="-7.0658E-10"
+        iyy="0.060393"
+        iyz="0.0014998"
+        izz="0.096926" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="box_1">
+    <inertial>
+      <origin
+        xyz="1.1102E-16 0.071012 0.175"
+        rpy="0 0 0" />
+      <mass
+        value="5.327" />
+      <inertia
+        ixx="0.12994"
+        ixy="-7.0907E-17"
+        ixz="-1.6488E-17"
+        iyy="0.16257"
+        iyz="1.5356E-17"
+        izz="0.12994" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/box_1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.12 0.56 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/box_1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="box_!"
+    type="prismatic">
+    <origin
+      xyz="0.81131 -0.64469 1.2801"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="box_1" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="box_2">
+    <inertial>
+      <origin
+        xyz="0 0.071012 0.175"
+        rpy="0 0 0" />
+      <mass
+        value="5.327" />
+      <inertia
+        ixx="0.12994"
+        ixy="-1.3072E-17"
+        ixz="2.5931E-17"
+        iyy="0.16257"
+        iyz="7.8168E-17"
+        izz="0.12994" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/box_2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.12 0.56 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/box_2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="box_2"
+    type="prismatic">
+    <origin
+      xyz="1.5566 -0.38765 1.3134"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="box_2" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="box_3">
+    <inertial>
+      <origin
+        xyz="-1.6653E-16 0.071012 0.065224"
+        rpy="0 0 0" />
+      <mass
+        value="5.327" />
+      <inertia
+        ixx="0.12994"
+        ixy="6.8046E-17"
+        ixz="-2.0031E-17"
+        iyy="0.16257"
+        iyz="-1.7974E-17"
+        izz="0.12994" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/box_3.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.12 0.56 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/box_3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="box_3"
+    type="prismatic">
+    <origin
+      xyz="0.48431 0 1.4793"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="box_3" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="box_4">
+    <inertial>
+      <origin
+        xyz="0 0.071012 -0.15148"
+        rpy="0 0 0" />
+      <mass
+        value="5.327" />
+      <inertia
+        ixx="0.12994"
+        ixy="-3.3796E-17"
+        ixz="8.2973E-17"
+        iyy="0.16257"
+        iyz="4.1683E-17"
+        izz="0.12994" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/box_4.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.12 0.56 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/box_4.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="box_4"
+    type="prismatic">
+    <origin
+      xyz="1.2296 0 1.612"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="box_4" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="greenbar_1">
+    <inertial>
+      <origin
+        xyz="0 -0.225 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.59523" />
+      <inertia
+        ixx="0.010255"
+        ixy="1.3235E-20"
+        ixz="-1.4334E-36"
+        iyy="0.00042171"
+        iyz="6.3473E-35"
+        izz="0.010255" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/greenbar_1.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.24 0.87 0.62 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/greenbar_1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="greenbar_1"
+    type="continuous">
+    <origin
+      xyz="1.2157 -1.0792 1.1928"
+      rpy="1.5708 -1.5708 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="greenbar_1" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="greenbar_2">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0" />
+      <inertia
+        ixx="0"
+        ixy="0"
+        ixz="0"
+        iyy="0"
+        iyz="0"
+        izz="0" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/greenbar_2.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.24 0.87 0.62 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_bin_urdf/meshes/greenbar_2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="greenbar_2"
+    type="continuous">
+    <origin
+      xyz="0.37519 0.38798 1.6905"
+      rpy="1.5708 1.5708 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="greenbar_2" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+</robot>

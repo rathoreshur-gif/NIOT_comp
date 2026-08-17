@@ -1,0 +1,41 @@
+<sdf version='1.9'>
+  <model name='path_marker'>
+    <static>true</static>
+    <link name='base_link'>
+      <inertial>
+        <pose>0.4572 -0.075291 8.9953e-08 0 0 0</pose>
+        <mass>2.538</mass>
+        <inertia>
+          <ixx>0.03791</ixx>
+          <ixy>2.4647e-07</ixy>
+          <ixz>1.9347e-07</ixz>
+          <iyy>0.24489</iyy>
+          <iyz>-8.4438e-08</iyz>
+          <izz>0.26552</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://path_marker/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='base_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://path_marker/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1 0.5 0 1</diffuse>
+          <ambient>1 0.5 0 1</ambient>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

@@ -1,0 +1,34 @@
+# Rosbag recording config
+# active: true  -> skip from rosbag (topic is working fine, no need to record)
+# active: false -> include in rosbag recording
+
+topics:
+  - name: /localization/pose
+    active: false
+
+  - name: /front_camera/image_raw
+    active: true
+
+  - name: /front_camera/oakd_frame
+    active: true
+
+  - name: /bottom_camera/image_raw
+    active: true
+
+  - name: /model/auv/imu
+    active: false
+
+  - name: /model/auv/odometry
+    active: false
+
+  - name: /model/auv/pose
+    active: false
+
+  - name: /clock
+    active: false
+
+  - name: /controller/thruster_forces
+    active: false
+
+  - name: /keyboard/keypress
+    active: true

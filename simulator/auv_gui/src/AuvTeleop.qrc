@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/AuvTeleop">
+    <file>AuvTeleop.qml</file>
+  </qresource>
+</RCC>

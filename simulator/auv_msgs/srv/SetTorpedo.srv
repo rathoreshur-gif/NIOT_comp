@@ -1,0 +1,5 @@
+# top, right, bottom, left
+string side
+# 1 for smallest, 4 for largest
+int64 size
+---

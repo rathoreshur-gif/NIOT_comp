@@ -1,0 +1,8 @@
+float64[] body_forces
+bool publish_pwm
+bool hold
+---
+bool success
+string message
+float64[] thruster_forces
+int32[] pwms

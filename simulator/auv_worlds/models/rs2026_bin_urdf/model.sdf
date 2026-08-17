@@ -1,0 +1,410 @@
+<?xml version="1.0" ?>
+<sdf version='1.9'>
+  <model name='rs2026_bin_urdf'>
+    <static>true</static>
+    <link name='base_link'>
+      <inertial>
+        <pose>1.0204 1.2699 0.28257 0 0 0</pose>
+        <mass>11.751</mass>
+        <inertia>
+          <ixx>0.057018</ixx>
+          <ixy>1.9787e-10</ixy>
+          <ixz>-7.0658e-10</ixz>
+          <iyy>0.060393</iyy>
+          <iyz>0.0014998</iyz>
+          <izz>0.096926</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='base_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/base_link.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+          <ambient>1 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+
+    <joint name='box_1_joint' type='prismatic'>
+      <pose relative_to='base_link'>0.81131 -0.64469 1.2801 1.5708 0 0</pose>
+      <parent>base_link</parent>
+      <child>box_1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='box_1'>
+      <pose relative_to='box_1_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>1.1102e-16 0.071012 0.175 0 0 0</pose>
+        <mass>5.327</mass>
+        <inertia>
+          <ixx>0.12994</ixx>
+          <ixy>-7.0907e-17</ixy>
+          <ixz>-1.6488e-17</ixz>
+          <iyy>0.16257</iyy>
+          <iyz>1.5356e-17</iyz>
+          <izz>0.12994</izz>
+        </inertia>
+      </inertial>
+      <collision name='box_1_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/box_1.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='box_1_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/box_1.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+
+      <!-- Scoring: markers landing in this bin. -->
+      <sensor name='box_1_contact_sensor' type='contact'>
+        <update_rate>30.0</update_rate>
+        <always_on>true</always_on>
+        <contact>
+          <collision>box_1_collision</collision>
+        </contact>
+      </sensor>
+    </link>
+
+    <joint name='box_2_joint' type='prismatic'>
+      <pose relative_to='base_link'>1.5566 -0.38765 1.3134 1.5708 0 0</pose>
+      <parent>base_link</parent>
+      <child>box_2</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='box_2'>
+      <pose relative_to='box_2_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0.071012 0.175 0 0 0</pose>
+        <mass>5.327</mass>
+        <inertia>
+          <ixx>0.12994</ixx>
+          <ixy>-1.3072e-17</ixy>
+          <ixz>2.5931e-17</ixz>
+          <iyy>0.16257</iyy>
+          <iyz>7.8168e-17</iyz>
+          <izz>0.12994</izz>
+        </inertia>
+      </inertial>
+      <collision name='box_2_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/box_2.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='box_2_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/box_2.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+
+      <!-- Scoring: markers landing in this bin. -->
+      <sensor name='box_2_contact_sensor' type='contact'>
+        <update_rate>30.0</update_rate>
+        <always_on>true</always_on>
+        <contact>
+          <collision>box_2_collision</collision>
+        </contact>
+      </sensor>
+    </link>
+
+    <joint name='box_3_joint' type='prismatic'>
+      <pose relative_to='base_link'>0.48431 0 1.4793 1.5708 0 0</pose>
+      <parent>base_link</parent>
+      <child>box_3</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='box_3'>
+      <pose relative_to='box_3_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-1.6653e-16 0.071012 0.065224 0 0 0</pose>
+        <mass>5.327</mass>
+        <inertia>
+          <ixx>0.12994</ixx>
+          <ixy>6.8046e-17</ixy>
+          <ixz>-2.0031e-17</ixz>
+          <iyy>0.16257</iyy>
+          <iyz>-1.7974e-17</iyz>
+          <izz>0.12994</izz>
+        </inertia>
+      </inertial>
+      <collision name='box_3_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/box_3.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <!-- Only two textured .dae bins were ever exported, and both carry the
+           box_1 geometry, which sits at local Z 0..0.35. box_3 and box_4 are
+           the same shape moved along local Z, so the shared visual has to be
+           pushed back by that difference or it renders where no collision is -
+           the bin looks displaced and a marker aimed at it falls straight
+           through. Offsets are the z_min of each box's own collision STL. -->
+      <visual name='box_3_visual'>
+        <pose>0 0 -0.109776 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/box_2.dae</uri>
+          </mesh>
+        </geometry>
+        
+      </visual>
+
+      <!-- Scoring: markers landing in this bin. -->
+      <sensor name='box_3_contact_sensor' type='contact'>
+        <update_rate>30.0</update_rate>
+        <always_on>true</always_on>
+        <contact>
+          <collision>box_3_collision</collision>
+        </contact>
+      </sensor>
+    </link>
+
+    <joint name='box_4_joint' type='prismatic'>
+      <pose relative_to='base_link'>1.2296 0 1.612 1.5708 0 0</pose>
+      <parent>base_link</parent>
+      <child>box_4</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='box_4'>
+      <pose relative_to='box_4_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0.071012 -0.15148 0 0 0</pose>
+        <mass>5.327</mass>
+        <inertia>
+          <ixx>0.12994</ixx>
+          <ixy>-3.3796e-17</ixy>
+          <ixz>8.2973e-17</ixz>
+          <iyy>0.16257</iyy>
+          <iyz>4.1683e-17</iyz>
+          <izz>0.12994</izz>
+        </inertia>
+      </inertial>
+      <collision name='box_4_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/box_4.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <!-- Only two textured .dae bins were ever exported, and both carry the
+           box_1 geometry, which sits at local Z 0..0.35. box_3 and box_4 are
+           the same shape moved along local Z, so the shared visual has to be
+           pushed back by that difference or it renders where no collision is -
+           the bin looks displaced and a marker aimed at it falls straight
+           through. Offsets are the z_min of each box's own collision STL. -->
+      <visual name='box_4_visual'>
+        <pose>0 0 -0.326476 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/box_1.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+
+      <!-- Scoring: markers landing in this bin. -->
+      <sensor name='box_4_contact_sensor' type='contact'>
+        <update_rate>30.0</update_rate>
+        <always_on>true</always_on>
+        <contact>
+          <collision>box_4_collision</collision>
+        </contact>
+      </sensor>
+    </link>
+
+    <!-- continuous joint converted to revolute with no effective limits -->
+    <joint name='greenbar_1_joint' type='revolute'>
+      <pose relative_to='base_link'>1.2157 -1.0792 1.1928 -1.5707926535764 -1.5707926536058 3.1415926535898</pose>
+      <parent>base_link</parent>
+      <child>greenbar_1</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1e16</lower>
+          <upper>1e16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='greenbar_1'>
+      <pose relative_to='greenbar_1_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 -0.225 0 0 0 0</pose>
+        <mass>0.59523</mass>
+        <inertia>
+          <ixx>0.010255</ixx>
+          <ixy>1.3235e-20</ixy>
+          <ixz>-1.4334e-36</ixz>
+          <iyy>0.00042171</iyy>
+          <iyz>6.3473e-35</iyz>
+          <izz>0.010255</izz>
+        </inertia>
+      </inertial>
+      <collision name='greenbar_1_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/greenbar_1.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='greenbar_1_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/greenbar_1.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.24 0.87 0.62 1</diffuse>
+          <ambient>0.24 0.87 0.62 1</ambient>
+        </material>
+      </visual>
+    </link>
+
+    <!-- greenbar_2 had zero mass in URDF; assigned minimal mass to make SDF valid -->
+    <joint name='greenbar_2_joint' type='revolute'>
+      <pose relative_to='base_link'>0.37519 0.38798 1.6905 1.5708 1.5708 0</pose>
+      <parent>base_link</parent>
+      <child>greenbar_2</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1e16</lower>
+          <upper>1e16</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='greenbar_2'>
+      <pose relative_to='greenbar_2_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.001</mass>
+        <inertia>
+          <ixx>1e-6</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1e-6</iyy>
+          <iyz>0</iyz>
+          <izz>1e-6</izz>
+        </inertia>
+      </inertial>
+      <collision name='greenbar_2_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/greenbar_2.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='greenbar_2_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://rs2026_bin_urdf/meshes/greenbar_2.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.24 0.87 0.62 1</diffuse>
+          <ambient>0.24 0.87 0.62 1</ambient>
+        </material>
+      </visual>
+    </link>
+
+  </model>
+</sdf>

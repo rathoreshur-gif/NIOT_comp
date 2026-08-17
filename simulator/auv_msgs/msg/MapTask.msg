@@ -1,0 +1,4 @@
+string task_name
+
+geometry_msgs/Vector3 task_position
+auv_msgs/Orientation task_orientation

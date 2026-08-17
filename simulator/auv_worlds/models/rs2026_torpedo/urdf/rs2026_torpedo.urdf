@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="rs2026_torpedo">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.127055489656095 1.07328572097546 1.62144872162049"
+        rpy="0 0 0" />
+      <mass
+        value="11.6978808304288" />
+      <inertia
+        ixx="0.159462789078765"
+        ixy="-9.07708763049361E-10"
+        ixz="0.00678142412126772"
+        iyy="0.347430920456255"
+        iyz="4.06837832922139E-20"
+        izz="0.201772746034743" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_torpedo/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://rs2026_torpedo/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

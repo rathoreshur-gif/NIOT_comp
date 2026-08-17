@@ -1,0 +1,340 @@
+# =====================================================================
+# RoboSub competition configuration: course layout and water disturbance
+#
+# This file is the single authority on what gets spawned and where. The
+# world generator strips every <include> out of the base world and rebuilds
+# them from this file, so editing a pose here is the only thing needed to
+# move a prop.
+#
+# Poses are [x, y, z, roll, pitch, yaw] with metres and DEGREES. (SDF itself
+# uses radians; the generator converts.)
+#
+# Randomisation is expressed as a half-range: a value of 0.2 means the
+# sampled offset is uniform in [-0.2, +0.2]. Set a component to 0 to pin it.
+#
+#   translation:  [dx, dy, dz]  metres, along world axes
+#   rotation_deg: [dr, dp, dy]  degrees, about world axes
+#
+# The translation figures are not chosen by hand. Each is 80% of the largest
+# half-range the geometry actually permits, computed from the prop meshes by
+#
+#     ros2 run auv_worlds mesh_limits --fraction 0.8
+#
+# which sweeps each task over its full rotation and jitter range, takes the
+# resulting world AABB, and finds the translation at which the task would leave
+# the pool, sink into the floor, break the surface, or close the gap to its
+# neighbour below one AUV width. Re-run it after editing any pose or mesh; the
+# "limit" column is the hard ceiling and the reason column says what binds it.
+#
+# Rotation is always applied about the WORLD axes, so "yaw +/- 5" means
+# 5 degrees about the pool vertical regardless of how the prop's own mesh
+# happens to be aligned.
+#
+# Pool geometry (see robosub.sdf header): X -1..24, Y -12.5..12.5,
+# floor at Z = -3.0, water surface at Z = 0.
+# =====================================================================
+
+# Environment to build on. Provides pool, lighting, physics and plugins.
+# Every <include> in it is discarded.
+base_world: robosub.sdf
+
+# null -> a fresh seed every launch. Set an integer to pin the course.
+# The seed is recorded in the generated world and the ground truth file,
+# so any run can be reproduced exactly by pasting it back here.
+seed: null
+
+# Used by any task that does not declare its own `randomize` block.
+defaults:
+  randomize:
+    translation: [0.0, 0.0, 0.0]
+    rotation_deg: [0.0, 0.0, 0.0]
+
+# =====================================================================
+# WATER DISTURBANCE
+#
+# Pool water, not a river. Every component is a ZERO-MEAN Ornstein-
+# Uhlenbeck (first-order Gauss-Markov) process on the world velocity
+# axes, so the water wanders and swirls but has no preferred direction:
+# averaged over a run the net flow is zero.
+#
+#   v = bias + drift + gust
+#
+# `drift` is the pool's lazy circulation - it wanders slowly and can sit
+# off-centre for a minute at a time, which reads as a slow drift, but it
+# is not biased toward any heading. `gust` is the fast stuff: eddies off
+# the walls, wake from a passing body, pump wash.
+#
+#   stddev        - 1-sigma speed of that component, per world axis (m/s)
+#   time_constant - correlation time (s). Small = twitchy, large = lazy.
+#
+# This is fed to the Hydrodynamics plugin's /ocean_current input, so drag
+# is computed from the vehicle's velocity RELATIVE to the water: an AUV
+# drifting with the water feels nothing, one holding station feels the
+# full push.
+#
+# Sizing these, measured on this vehicle: an unpowered AUV settles to
+# about 0.86x the water speed, so a component of stddev sigma and
+# correlation time tau moves it roughly
+#
+#       excursion  ~  0.86 * sigma * tau   metres
+#
+# The values below give ~1.8 m of slow wander and ~0.25 m of gust sway,
+# which is plainly visible without shoving the vehicle off the course.
+# Halve intensity_scale for gentle water; a steady 0.6 m/s pins the
+# unpowered AUV against the far pool wall in 10 s, so stay well under it.
+#
+# Everything here can be changed while the simulation runs:
+#   ros2 service call /simulator/disable_current std_srvs/srv/Empty
+#   ros2 service call /simulator/enable_current  std_srvs/srv/Empty
+#   ros2 param set /ocean_current intensity_scale 2.5
+# =====================================================================
+current:
+  enabled: true
+  update_rate: 20.0        # Hz. The processes are slow; this is plenty.
+
+  # Multiplies every stddev below. The single knob for "rougher water".
+  intensity_scale: 1.0
+
+  # Steady flow, in m/s along world XYZ. Leave at zero for pool-like
+  # disturbance. Setting it is what turns this into a river.
+  bias: [0.0, 0.0, 0.0]
+
+  # Slow wander. Vertical is kept small - pool water moves sideways far
+  # more than it moves up and down.
+  drift:
+    stddev: [0.070, 0.070, 0.015]
+    time_constant: 30.0
+
+  # Fast eddies and swirls. Short tau, so this shows up as visible jostle
+  # rather than displacement.
+  gust:
+    stddev: [0.070, 0.070, 0.025]
+    time_constant: 4.0
+
+# ---------------------------------------------------------------------
+# The vehicle. Listed here so its spawn can be jittered too; zero the
+# randomize block to always start from the same place.
+# ---------------------------------------------------------------------
+vehicle:
+  uri: model://m7urdfnew_sdf_package
+  name: auv
+  # robosub.sdf header: "AUV start X = 0.0 (behind gate, at world origin)".
+  pose: [0.0, 0.0, -0.5, 0.0, 0.0, 0.0]
+  randomize:
+    # x is the tight one: the hull already reaches back to X = -0.767 and the
+    # pool wall is at -1.0, so only 0.233 m of the range is real.
+    translation: [0.186, 9.689, 0.204]
+    rotation_deg: [0.0, 0.0, 3.0]
+
+# ---------------------------------------------------------------------
+# Tasks. Each has an `origin` frame and one or more `props` placed
+# relative to it.
+#
+#   randomize  - moves the whole task frame, so every prop in it shifts
+#                and rotates together as a rigid group.
+#   jitter     - optional, applied per prop on top of the task transform.
+#                Use it to scatter members of a group slightly.
+# ---------------------------------------------------------------------
+tasks:
+
+  # -------------------------------------------------------------------
+  # TASK 1 - GATE
+  # -------------------------------------------------------------------
+  gate:
+    origin: [3.0, 0.0, -0.8, 0.0, 0.0, 0.0]
+    randomize:
+      # y is bounded only by the pool walls - the gate is 3.1 m wide in a 25 m
+      # pool - so the geometric ceiling there is far wider than a sane course.
+      # Cut it if you want the gate to stay near the lane centreline.
+      translation: [0.824, 8.522, 0.347]
+      rotation_deg: [0.0, 0.0, 5.0]
+    props:
+      # The base_link.dae mesh is already upright - thin in X, 3.1 m wide in Y,
+      # 1.58 m tall in Z - so it only needs yawing, not standing up. (The
+      # roll=90/yaw=90 inherited from robosub.sdf turned it edge-on to the lane
+      # and pushed it a metre out of the water; robosub.sdf's own comment
+      # describes a mesh orientation this .dae does not have.)
+      #
+      # Yaw 180 puts the wider half of the off-centre mesh on -Y. The gate then
+      # spans Y -1.85 .. +1.25 and Z -2.01 .. -0.43, i.e. fully submerged with
+      # the top bar 0.43 m under the surface. If you want the top bar right at
+      # the surface as robosub.sdf intended (~-0.15), set the task origin Z to
+      # -0.587 rather than moving this.
+      - uri: model://rs2026_gate
+        name: task1_gate
+        pose: [0.0, 0.0, 0.0, 0.0, 0.0, 180.0]
+    # Swim-through opening, in the PROP's own frame, measured off base_link.dae.
+    # The mesh has three posts: outer ones at Y -1.252 and +1.847 and a centre
+    # divider at the midpoint, +0.2974, splitting the gate into two 1.55 m
+    # halves. Vertically the opening runs from the post feet (-1.208) up to the
+    # underside of the top bar (+0.301); the scorer ignores a vehicle that
+    # ducks under the posts or hops over the bar.
+    scoring:
+      prop: task1_gate
+      opening_y: [-1.252, 1.847]
+      opening_z: [-1.208, 0.301]
+      divider_y: 0.2974
+      points:
+        left: 50           # awarded once, on the first forward pass
+        right: 100
+        collision: -30     # each time the vehicle strikes the gate frame
+      # Contacts chatter at the sensor rate while the hull rests against the
+      # frame, so a strike only counts again after this many seconds clear.
+      collision_cooldown: 3.0
+
+  # -------------------------------------------------------------------
+  # TASK 2 - SLALOM
+  # 3x3 pole grid, origin at the centre pole. Rows 0.9 m apart in X,
+  # columns 1.5 m apart in Y. Poles are 0.9 m tall from their origin.
+  # -------------------------------------------------------------------
+  slalom:
+    origin: [10.4, -4.5, -1.0, 0.0, 0.0, 0.0]
+    randomize:
+      # z is pinned near zero: the poles top out at Z = -0.1, so 0.1 m of rise
+      # would push them through the water surface.
+      translation: [1.503, 2.267, 0.080]
+      rotation_deg: [0.0, 0.0, 10.0]
+    jitter:
+      translation: [0.05, 0.05, 0.00]
+      rotation_deg: [0.0, 0.0, 0.0]
+    props:
+      - {uri: model://slalom_white, name: slalom_white_r1_left,  pose: [-0.9,  1.5, 0.0, 0.0, 0.0, 0.0]}
+      - {uri: model://slalom_red,   name: slalom_red_r1,         pose: [-0.9,  0.0, 0.0, 0.0, 0.0, 0.0]}
+      - {uri: model://slalom_white, name: slalom_white_r1_right, pose: [-0.9, -1.5, 0.0, 0.0, 0.0, 0.0]}
+      - {uri: model://slalom_white, name: slalom_white_r2_left,  pose: [ 0.0,  1.5, 0.0, 0.0, 0.0, 0.0]}
+      - {uri: model://slalom_red,   name: slalom_red_r2,         pose: [ 0.0,  0.0, 0.0, 0.0, 0.0, 0.0]}
+      - {uri: model://slalom_white, name: slalom_white_r2_right, pose: [ 0.0, -1.5, 0.0, 0.0, 0.0, 0.0]}
+      - {uri: model://slalom_white, name: slalom_white_r3_left,  pose: [ 0.9,  1.5, 0.0, 0.0, 0.0, 0.0]}
+      - {uri: model://slalom_red,   name: slalom_red_r3,         pose: [ 0.9,  0.0, 0.0, 0.0, 0.0, 0.0]}
+      - {uri: model://slalom_white, name: slalom_white_r3_right, pose: [ 0.9, -1.5, 0.0, 0.0, 0.0, 0.0]}
+    # One layer per row. The row's red centre pole IS the layer: its randomised
+    # pose gives the plane, and the pole itself is the divider, so detection
+    # follows the per-pole jitter with nothing to reconstruct.
+    #
+    # The opening is measured from that pole: +/-1.5 m out to the white poles,
+    # and 0 .. 0.9 m up, which is the pole height. Swimming under or over the
+    # poles, or outside the whites, is not a pass.
+    scoring:
+      layers: [slalom_red_r1, slalom_red_r2, slalom_red_r3]
+      opening_y: [-1.5, 1.5]
+      opening_z: [0.0, 0.9]
+      divider_y: 0.0
+      # Which side of the red pole scores. "left" or "right" - passing the other
+      # side is detected and logged but earns nothing. Left/right are as seen by
+      # a vehicle making the intended forward run.
+      required_side: left
+      points:
+        layer: 50        # per layer cleared on the required side, 3 layers
+
+  # -------------------------------------------------------------------
+  # TASK 3 - BINS
+  # Origin sits on the pool floor; the prop offset seats the mesh on it.
+  # -------------------------------------------------------------------
+  bins:
+    origin: [17.0, -5.0, -3.0, 0.0, 0.0, 0.0]
+    randomize:
+      # z must stay 0 - the stand rests on the floor, so any drop buries it.
+      translation: [1.503, 1.395, 0.000]
+      rotation_deg: [0.0, 0.0, 10.0]
+    props:
+      # Bin mesh starts at local Z = +0.892908, so negating that seats it exactly.
+      # (-0.893 sank the stand 92 um into the floor.)
+      - uri: model://rs2026_bin_urdf
+        name: task3_bins
+        pose: [0.0, 0.0, -0.892908, 0.0, 0.0, 0.0]
+    # The four bins, measured off their collision meshes in the PROP's frame.
+    # Each is a 0.35 x 0.35 x 0.30 open-top box with roughly 1 cm walls, and
+    # they sit at noticeably different heights on the stand.
+    #
+    # A marker touching a bin only scores if the CONTACT POINT falls inside
+    # these bounds, shrunk by wall_inset. That rejects a marker glancing off an
+    # outside wall or coming to rest on the rim, which a bare contact test
+    # would happily count.
+    scoring:
+      prop: task3_bins
+      wall_inset: 0.02
+      markers: [marker_left, marker_right]
+      bins:
+        - {name: box_1, x: [0.636, 0.986], y: [-0.995, -0.645], z: [1.260, 1.560]}
+        - {name: box_2, x: [1.382, 1.732], y: [-0.738, -0.388], z: [1.293, 1.593]}
+        - {name: box_3, x: [0.309, 0.659], y: [-0.240,  0.110], z: [1.459, 1.759]}
+        - {name: box_4, x: [1.055, 1.405], y: [-0.024,  0.326], z: [1.592, 1.892]}
+      points:
+        marker_in_bin: 50    # per marker landed, so both droppers can score
+
+  # -------------------------------------------------------------------
+  # TASK 4 - TORPEDOES
+  # robosub.sdf header: X = 16.0, left side Y ~ +5.0.
+  # Origin sits on the pool floor and the prop offset seats the board on it,
+  # same idiom as the bins and the octagon. (It was previously mid-water at
+  # Z = -1.5; restore that origin and the 0.760 z-range below if you want the
+  # board floating rather than standing on the bottom.)
+  # -------------------------------------------------------------------
+  torpedo:
+    origin: [16.0, 5.0, -3.0, 0.0, 0.0, 0.0]
+    randomize:
+      # z must stay 0 now that the board rests on the floor.
+      translation: [1.249, 2.267, 0.000]
+      rotation_deg: [0.0, 0.0, 5.0]
+    props:
+      # Board mesh spans local Z -0.549878 .. +0.549878 about its own origin,
+      # so negating the minimum stands it exactly on the floor.
+      - uri: model://rs2026_torpedo
+        name: task4_torpedo
+        pose: [0.0, 0.0, 0.549878, 0.0, 0.0, 0.0]
+
+  # -------------------------------------------------------------------
+  # TASK 5 - OCTAGON
+  # robosub.sdf header: X = 22.0, left-centre Y ~ +2.0.
+  # The mesh is the bottom table (it carries the Task5 image textures),
+  # so it is seated on the pool floor for the down camera to read.
+  # -------------------------------------------------------------------
+  octagon:
+    origin: [22.0, 2.0, -3.0, 0.0, 0.0, 0.0]
+    randomize:
+      # x is the binding axis here: the table already reaches X = 22.83 and the
+      # far wall is at 24.0. z stays 0 - it is seated on the floor.
+      translation: [0.938, 1.395, 0.000]
+      rotation_deg: [0.0, 0.0, 15.0]
+    props:
+      # Table mesh spans local Z -0.055747 .. +0.050; negating the minimum
+      # seats it exactly. (+0.056 floated it 253 um above the floor.)
+      - uri: model://rs2026_octogon
+        name: task5_octagon
+        pose: [0.0, 0.0, 0.055747, 0.0, 0.0, 0.0]
+
+      # The four graspable pickups. These used to be drawn into the table mesh;
+      # each is now its own dynamic model so the gripper's DetachableJoints
+      # (m7urdfnew_sdf_package/model.sdf) can weld them on. The names must stay
+      # exactly as written - each plugin's <child_model> and simulator_bridge's
+      # attachable_objects both match on them.
+      #
+      # X/Y is each prop's own as-designed spot in the table's CAD frame, which
+      # is why they are all different and none of them is the origin. The table
+      # now collides against the prop-free mesh, so the top face is flat and a
+      # pickup lands wherever it is dropped.
+      #
+      # Z: the table prop sits at 0.055747 over a 0.050 half-thick mid box, so
+      # the top face is 0.105747. Each pickup's origin is the centre of its own
+      # collision box, so it rests at 0.105747 + half that box's height:
+      #   bandaid, plug     0.0250 tall -> 0.118247
+      #   capsule, screw    0.0500 tall -> 0.130747
+      # Every spawn Z below is its resting Z + 0.4, so each falls 0.4 m onto the
+      # table. Net buoyancy is only mildly negative (1200 kg/m^3 of prop against
+      # 1025 kg/m^3 of water) so they settle gently rather than bouncing.
+      #
+      # These carry no jitter of their own - the octagon task has no `jitter`
+      # block, so all five props move as one rigid group under the task
+      # randomize above and the pickups always land on the table.
+      - uri: model://rs2026_pickup_bandaid
+        name: pickup_bandaid
+        pose: [-0.3153, -0.2633, 0.518247, 0.0, 0.0, 0.0]
+      - uri: model://rs2026_pickup_plug
+        name: pickup_plug
+        pose: [0.3233, 0.0964, 0.518247, 0.0, 0.0, 0.0]
+      - uri: model://rs2026_pickup_capsule
+        name: pickup_capsule
+        pose: [0.1700, -0.3400, 0.530747, 0.0, 0.0, 0.0]
+      - uri: model://rs2026_pickup_screw
+        name: pickup_screw
+        pose: [-0.1700, 0.3000, 0.530747, 0.0, 0.0, 0.0]

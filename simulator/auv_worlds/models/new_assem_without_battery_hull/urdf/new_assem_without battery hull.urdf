@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="new_assem_without battery hull">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.678506856104469 0.855462275632346 1.26016831185882"
+        rpy="0 0 0" />
+      <mass
+        value="37.8600041186211" />
+      <inertia
+        ixx="0.717824257640256"
+        ixy="0.0179474764386968"
+        ixz="-0.00232812129376446"
+        iyy="1.70679606208325"
+        iyz="0.00671782687350376"
+        izz="1.3592127603398" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://new_assem_without battery hull/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://new_assem_without battery hull/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

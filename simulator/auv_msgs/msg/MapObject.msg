@@ -1,0 +1,4 @@
+string object_name
+
+geometry_msgs/Vector3 object_midpoint
+auv_msgs/Orientation orientation

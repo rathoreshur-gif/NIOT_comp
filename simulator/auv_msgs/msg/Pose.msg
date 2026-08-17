@@ -1,0 +1,2 @@
+geometry_msgs/Vector3 position
+auv_msgs/Orientation orientation

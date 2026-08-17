@@ -1,0 +1,83 @@
+# Simulator PID profiles (sim-tuned gains)
+simulator_pid:
+  short_range_threshold:
+    x: 10.0   # cm — surge error below this → switch to short_range
+    y: 10.0   # cm — sway error below this
+    z: 5.0    # cm — heave error below this
+
+  short_range:
+    surge:  { Kp: 0.1,  Ki: 0.0, Kd: 0.45, maxBack: -20, maxFront: 20, ki_cap: 2.0,  ki_error_threshold: 10.0 }
+    sway:   { Kp: 0.1,  Ki: 0.0,  Kd: 0.45,  maxBack: -20, maxFront: 20, ki_cap: 2.0,  ki_error_threshold: 10.0 }
+    heave:  { Kp: 0.3,  Ki: 0.005,  Kd: 1.0,  maxBack: -30, maxFront: 30, ki_cap: 5.0,  ki_error_threshold: 10.0 }
+    roll:   { Kp: 0.0,  Ki: 0.0,  Kd: 0.0,  maxBack: -10, maxFront: 10, ki_cap: 10.0, ki_error_threshold: 10.0 }
+    pitch:  { Kp: 0.0,  Ki: 0.0,  Kd: 0.0,  maxBack: -10, maxFront: 10, ki_cap: 10.0, ki_error_threshold: 10.0 }
+    yaw:    { Kp: 0.1,  Ki: 0.0,  Kd: 0.3,  maxBack: -10, maxFront: 10, ki_cap: 3.0,  ki_error_threshold: 10.0 }
+
+  long_range:
+    surge:  { Kp: 0.1,  Ki: 0.0, Kd: 0.45, maxBack: -20, maxFront: 20, ki_cap: 2.0,  ki_error_threshold: 10.0 }
+    sway:   { Kp: 0.1,  Ki: 0.0,  Kd: 0.45,  maxBack: -20, maxFront: 20, ki_cap: 2.0,  ki_error_threshold: 10.0 }
+    heave:  { Kp: 0.3,  Ki: 0.005,  Kd: 1.0,  maxBack: -30, maxFront: 30, ki_cap: 5.0,  ki_error_threshold: 10.0 }
+    roll:   { Kp: 0.0,  Ki: 0.0,  Kd: 0.0,  maxBack: -10, maxFront: 10, ki_cap: 10.0, ki_error_threshold: 10.0 }
+    pitch:  { Kp: 0.0,  Ki: 0.0,  Kd: 0.0,  maxBack: -10, maxFront: 10, ki_cap: 10.0, ki_error_threshold: 10.0 }
+    yaw:    { Kp: 0.1,  Ki: 0.0,  Kd: 0.3,  maxBack: -10, maxFront: 10, ki_cap: 3.0,  ki_error_threshold: 10.0 }
+
+# Hardware PID constants (real AUV gains — from auv_controller/constants.py)
+
+# Hardware thruster geometry (from auv_controller/constants.py)
+hardware_thrust_position:
+  num_thrust: 8
+  max_front_force: 40.0
+  max_back_force: 40.0
+  max_pwm: 1750
+  min_pwm: 1250
+  zero_pwm: 1500
+  COM: { x: 0.0, y: 0.0, z: 0.0 }
+  surge_front_left:  { x:  0.402, y: -0.244, z: 0.0, roll: 0.0, pitch: 0.0,  yaw:  0.785 }
+  surge_front_right: { x:  0.402, y:  0.244, z: 0.0, roll: 0.0, pitch: 0.0,  yaw: -0.785 }
+  surge_back_left:   { x: -0.402, y: -0.244, z: 0.0, roll: 0.0, pitch: 0.0,  yaw: -0.785 }
+  surge_back_right:  { x: -0.402, y:  0.244, z: 0.0, roll: 0.0, pitch: 0.0,  yaw:  0.785 }
+  heave_front_left:  { x:  0.226, y: -0.301, z: 0.0, roll: 0.0, pitch: 1.57, yaw:  0.0   }
+  heave_front_right: { x:  0.226, y:  0.301, z: 0.0, roll: 0.0, pitch: 1.57, yaw:  0.0   }
+  heave_back_left:   { x: -0.226, y: -0.301, z: 0.0, roll: 0.0, pitch: 1.57, yaw:  0.0   }
+  heave_back_right:  { x: -0.226, y:  0.301, z: 0.0, roll: 0.0, pitch: 1.57, yaw:  0.0   }
+
+# Control Effectiveness Matrices (from auv_controller/constants.py)
+hardware_surge_CEM:
+  surge_front_left:  { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_front_right: { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_back_left:   { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_back_right:  { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_front_left:  { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_front_right: { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_back_left:   { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_back_right:  { power_factor: 1.0, backward_ratio: 1.0 }
+
+hardware_sway_CEM:
+  surge_front_left:  { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_front_right: { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_back_left:   { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_back_right:  { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_front_left:  { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_front_right: { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_back_left:   { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_back_right:  { power_factor: 1.0, backward_ratio: 1.0 }
+
+hardware_heave_CEM:
+  surge_front_left:  { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_front_right: { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_back_left:   { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_back_right:  { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_front_left:  { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_front_right: { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_back_left:   { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_back_right:  { power_factor: 1.0, backward_ratio: 1.0 }
+
+hardware_rpy_CEM:
+  surge_front_left:  { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_front_right: { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_back_left:   { power_factor: 1.0, backward_ratio: 1.0 }
+  surge_back_right:  { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_front_left:  { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_front_right: { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_back_left:   { power_factor: 1.0, backward_ratio: 1.0 }
+  heave_back_right:  { power_factor: 1.0, backward_ratio: 1.0 }

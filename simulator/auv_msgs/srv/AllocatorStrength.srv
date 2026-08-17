@@ -1,0 +1,11 @@
+string cem_name
+string thruster_name
+float64 strength_delta
+float64[] body_forces
+---
+bool success
+string message
+string updated_field
+float64 old_value
+float64 new_value
+float64 thruster_force

@@ -1,0 +1,6 @@
+std_msgs/Bool start_not_stop
+std_msgs/Bool reload
+string task_name
+float64 dist_thresh
+float64 time_decay
+---

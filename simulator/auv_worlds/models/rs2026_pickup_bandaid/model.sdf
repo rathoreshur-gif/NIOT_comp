@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <!-- Task 5 octagon pickup: band-aid.
+
+       The source mesh is authored in the octagon table's CAD frame, which is
+       Y-up and places the object at its as-designed spot on the table. Three
+       things are baked out here so the model behaves like a standalone prop:
+
+         roll +90 deg   stands the CAD frame up into SDF's Z-up
+         mesh scale     shrinks the prop to something the gripper can close on
+         xyz offset     re-centres the scaled mesh AABB on the link origin
+
+       so the model's origin is the object's centre and the world only has to
+       say where to put it. See rs2026_octogon/model.sdf, which applies the same
+       roll to the table itself.
+
+       On the scale: the fingers pivot at y = +0.1000 and y = -0.0667 and swing
+       about X, which puts the widest jaw opening (both joints at 0 rad) at
+       0.0928 m and the opening at GRIPPER_CLOSE_ANGLE at about 0.060 m. A prop
+       has to sit between those two numbers - wider and it will not fit between
+       the fingers, narrower and the fingers close past it without ever raising
+       both contact sensors. The CAD prop is 0.168 m across, nearly twice the
+       maximum opening, so every pickup is scaled to 0.070 m across: dead centre
+       of the band and the same width as the test_box grasp that already works.
+       0.070 / 0.168 = 0.416667.
+
+       Mesh AABB after the roll and scale: 0.0700 x 0.0700 x 0.0250 m. -->
+  <model name="rs2026_pickup_bandaid">
+    <link name="pickup_link">
+      <inertial>
+        <!-- 1200 kg/m^3 over the collision box. The world's graded_buoyancy
+             plugin displaces at 1025 kg/m^3 using this same collision volume, so
+             anything lighter than 1025*V floats off the table instead of resting
+             on it. 1200 leaves it mildly negatively buoyant, as the real prop is. -->
+        <mass>0.1470</mass>
+        <inertia>
+          <ixx>0.000068</ixx><ixy>0</ixy><ixz>0</ixz>
+          <iyy>0.000068</iyy><iyz>0</iyz>
+          <izz>0.000120</izz>
+        </inertia>
+      </inertial>
+
+      <!-- Box rather than the mesh, matching test_box. The gripper decides it has
+           a grasp from the two finger contact sensors, and box-vs-box contact
+           reports a stable pair of points where trimesh contact chatters. -->
+      <collision name="pickup_collision">
+        <geometry>
+          <box><size>0.0700 0.0700 0.0250</size></box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode><kp>500000</kp><kd>200</kd><max_vel>0.1</max_vel><min_depth>0.001</min_depth></ode>
+          </contact>
+          <friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction>
+        </surface>
+      </collision>
+
+      <visual name="pickup_visual">
+        <pose>0.131375 0.109708 -0.030292 1.570796 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>0.416667 0.416667 0.416667</scale>
+            <uri>model://rs2026_octogon/meshes/bandaid_pickup_obj.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+
+    <!-- Water drag; see rs2026_pickup_capsule/model.sdf for the derivation and for
+         why the added-mass terms are deliberately left at zero. Broadside area is
+         half the capsule's (0.00175 m^2) because this prop is 0.025 m thick, so the
+         in-plane quadratic terms drop to match; the flat face is unchanged. -->
+    <plugin filename="ignition-gazebo-hydrodynamics-system"
+            name="ignition::gazebo::systems::Hydrodynamics">
+      <link_name>pickup_link</link_name>
+
+      <xU>-0.3</xU>
+      <yV>-0.3</yV>
+      <zW>-0.3</zW>
+      <kP>-0.001</kP>
+      <mQ>-0.001</mQ>
+      <nR>-0.001</nR>
+
+      <xUabsU>-0.95</xUabsU>
+      <yVabsV>-0.95</yVabsV>
+      <zWabsW>-2.6</zWabsW>
+      <kPabsP>-0.003</kPabsP>
+      <mQabsQ>-0.003</mQabsQ>
+      <nRabsR>-0.003</nRabsR>
+    </plugin>
+  </model>
+</sdf>
