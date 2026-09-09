@@ -6,9 +6,26 @@
 
       <inertial>
         <mass>40.81837758</mass>
+        <!-- Roll and pitch are LOCKED, not merely heavy. ixx (roll) and iyy
+             (pitch) are set five orders of magnitude above the real hull's, so
+             every torque the thrusters, the buoyancy offset, a torpedo launch
+             or a wall graze can put into those two axes produces an angular
+             acceleration too small to see. The vehicle flies flat and stays
+             flat, which is what makes it drivable by a stranger at a stand.
+
+             izz (yaw) is left at the hull's real value: yaw is the axis the
+             right stick steers with, and inflating it would make the vehicle
+             unturnable. Off-diagonal terms stay zero so the three axes cannot
+             feed each other - a non-zero ixz against an ixx this large would
+             couple a yaw command straight into a roll the solver then fights.
+
+             These are simulation numbers chosen for handling, NOT the hull's
+             measured inertia tensor. Anything that wants the real values -
+             a controller identification, a physical-plausibility check - must
+             not read them from here. -->
         <inertia>
-          <ixx>1000</ixx>  <ixy>0</ixy>  <ixz>0</ixz>
-          <iyy>1000</iyy>   <iyz>0</iyz>
+          <ixx>1000000</ixx>  <ixy>0</ixy>  <ixz>0</ixz>
+          <iyy>1000000</iyy>   <iyz>0</iyz>
           <izz>7.90</izz>
         </inertia>
       </inertial>
@@ -353,11 +370,47 @@
         <limit><lower>-1e16</lower><upper>1e16</upper></limit>
       </axis>
     </joint>
+    <!-- EVERY thruster below sets <velocity_control>true</velocity_control>,
+         and none of them may stop doing so.
+
+         The plugin's default is FALSE, which is not "no controller" but a PID
+         that chases the propeller's spin rate. Thruster.cc, PreUpdate:
+
+             double torque = 0.0;
+             if (!velocityControl) {
+               auto angularError = currentAngular - desiredPropellerAngVel;
+               if (abs(angularError) > 0.1)
+                 torque = propellerController.Update(angularError, dt);
+             }
+             link.AddWorldWrench(_ecm, unitVector * desiredThrust,
+                                 unitVector * torque);
+
+         That wrench lands on the PROPELLER link, whose only connection to the
+         world is its revolute joint to base_link, so the torque is fed straight
+         into the hull about the joint axis. It is not a physical reaction
+         torque - nothing takes the other half of the pair - it is a net
+         external moment on the vehicle, proportional to how far the propeller
+         has yet to spin up, which at these coefficients is hundreds of rad/s.
+
+         The four HEAVE joints all have axis 0 0 1. That axis is YAW. They carry
+         the buoyancy feed-forward whenever the controller is live, so their
+         thrust is never zero, so four same-signed torques were being poured
+         into yaw with the sticks centred - and hydrodynamic damping (nR) turns
+         a constant torque into a constant rate. That was the vehicle yawing on
+         its own with nobody touching the pad. The four surge joints are
+         horizontal, so their share of it went into roll and pitch instead.
+
+         With velocity control the joint is spun kinematically for the look of
+         the thing, `torque` stays 0.0, and the link gets thrust and nothing
+         else - which is all this model ever wanted from the plugin. -->
     <plugin filename="ignition-gazebo-thruster-system" name="ignition::gazebo::systems::Thruster">
       <joint_name>surge_front_left_joint</joint_name>
       <thrust_coefficient>0.0001</thrust_coefficient>
       <fluid_density>1000</fluid_density>
       <propeller_diameter>0.1</propeller_diameter>
+      <!-- See the note above the first thruster: without this the plugin
+           runs its propeller PID and torques the hull. -->
+      <velocity_control>true</velocity_control>
     </plugin>
 
     <link name="surge_front_right_link">
@@ -380,6 +433,9 @@
       <thrust_coefficient>0.0001</thrust_coefficient>
       <fluid_density>1000</fluid_density>
       <propeller_diameter>0.1</propeller_diameter>
+      <!-- See the note above the first thruster: without this the plugin
+           runs its propeller PID and torques the hull. -->
+      <velocity_control>true</velocity_control>
     </plugin>
 
     <link name="surge_back_left_link">
@@ -402,6 +458,9 @@
       <thrust_coefficient>0.0001</thrust_coefficient>
       <fluid_density>1000</fluid_density>
       <propeller_diameter>0.1</propeller_diameter>
+      <!-- See the note above the first thruster: without this the plugin
+           runs its propeller PID and torques the hull. -->
+      <velocity_control>true</velocity_control>
     </plugin>
 
     <link name="surge_back_right_link">
@@ -424,6 +483,9 @@
       <thrust_coefficient>0.0001</thrust_coefficient>
       <fluid_density>1000</fluid_density>
       <propeller_diameter>0.1</propeller_diameter>
+      <!-- See the note above the first thruster: without this the plugin
+           runs its propeller PID and torques the hull. -->
+      <velocity_control>true</velocity_control>
     </plugin>
 
     <link name="heave_front_left_link">
@@ -446,6 +508,9 @@
       <thrust_coefficient>0.0001</thrust_coefficient>
       <fluid_density>1000</fluid_density>
       <propeller_diameter>0.1</propeller_diameter>
+      <!-- See the note above the first thruster: without this the plugin
+           runs its propeller PID and torques the hull. -->
+      <velocity_control>true</velocity_control>
     </plugin>
 
     <link name="heave_front_right_link">
@@ -468,6 +533,9 @@
       <thrust_coefficient>0.0001</thrust_coefficient>
       <fluid_density>1000</fluid_density>
       <propeller_diameter>0.1</propeller_diameter>
+      <!-- See the note above the first thruster: without this the plugin
+           runs its propeller PID and torques the hull. -->
+      <velocity_control>true</velocity_control>
     </plugin>
 
     <link name="heave_back_left_link">
@@ -490,6 +558,9 @@
       <thrust_coefficient>0.0001</thrust_coefficient>
       <fluid_density>1000</fluid_density>
       <propeller_diameter>0.1</propeller_diameter>
+      <!-- See the note above the first thruster: without this the plugin
+           runs its propeller PID and torques the hull. -->
+      <velocity_control>true</velocity_control>
     </plugin>
 
     <link name="heave_back_right_link">
@@ -512,170 +583,39 @@
       <thrust_coefficient>0.0001</thrust_coefficient>
       <fluid_density>1000</fluid_density>
       <propeller_diameter>0.1</propeller_diameter>
+      <!-- See the note above the first thruster: without this the plugin
+           runs its propeller PID and torques the hull. -->
+      <velocity_control>true</velocity_control>
     </plugin>
 
-    <model name="marker_left">
-      <pose>0.0 0.12 -0.10 0 0 0</pose>
-      <link name="marker_left_link">
-        <inertial>
-          <mass>0.001</mass>
-          <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
-        </inertial>
-        <collision name="marker_left_collision">
-          <pose>-0.6538 1.2814 -0.8547 0 0 0</pose>
-          <geometry>
-            <mesh>
-              <uri>model://marker/meshes/base_link.STL</uri>
-              <scale>1 1 1</scale>
-            </mesh>
-          </geometry>
-        </collision>
-        <visual name="marker_left_visual">
-          <pose>-0.6538 1.2814 -0.8547 0 0 0</pose>
-          <geometry>
-            <mesh>
-              <uri>model://marker/meshes/base_link.STL</uri>
-              <scale>1 1 1</scale>
-            </mesh>
-          </geometry>
-          <material>
-            <ambient>0.990196 1 1 1</ambient>
-            <diffuse>0.990196 1 1 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
+    <!-- The dropper and the torpedo tube.
+         marker_left and torpedo_left are TOP-LEVEL models in the world, not
+         models nested in here, and that is deliberate: Gazebo's set_pose
+         refuses a nested model outright ("Unable to set world pose for nested
+         models"), so a nested payload can be released but never put back. Top
+         level, a reload is teleport-then-attach - which is what the second
+         press of the drop or fire button does.
+         world_generator places them at the vehicle's sampled pose plus their
+         mount offset, because these joints weld child to parent wherever they
+         find them at world load. -->
     <plugin filename="ignition-gazebo-detachable-joint-system"
             name="ignition::gazebo::systems::DetachableJoint">
       <parent_link>base_link</parent_link>
       <child_model>marker_left</child_model>
-      <child_link>marker_left_link</child_link>
+      <child_link>payload_link</child_link>
       <detach_topic>/model/auv/joint/marker_left_joint/detach</detach_topic>
       <attach_topic>/model/auv/joint/marker_left_joint/attach</attach_topic>
       <output_topic>/model/auv/joint/marker_left_joint/state</output_topic>
     </plugin>
 
-    <model name="marker_right">
-      <pose>0.0 -0.12 -0.10 0 0 0</pose>
-      <link name="marker_right_link">
-        <inertial>
-          <mass>0.001</mass>
-          <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
-        </inertial>
-        <collision name="marker_right_collision">
-          <pose>-0.6538 1.2814 -0.8547 0 0 0</pose>
-          <geometry>
-            <mesh>
-              <uri>model://marker/meshes/base_link.STL</uri>
-              <scale>1 1 1</scale>
-            </mesh>
-          </geometry>
-        </collision>
-        <visual name="marker_right_visual">
-          <pose>-0.6538 1.2814 -0.8547 0 0 0</pose>
-          <geometry>
-            <mesh>
-              <uri>model://marker/meshes/base_link.STL</uri>
-              <scale>1 1 1</scale>
-            </mesh>
-          </geometry>
-          <material>
-            <ambient>0.990196 1 1 1</ambient>
-            <diffuse>0.990196 1 1 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <plugin filename="ignition-gazebo-detachable-joint-system"
-            name="ignition::gazebo::systems::DetachableJoint">
-      <parent_link>base_link</parent_link>
-      <child_model>marker_right</child_model>
-      <child_link>marker_right_link</child_link>
-      <detach_topic>/model/auv/joint/marker_right_joint/detach</detach_topic>
-      <attach_topic>/model/auv/joint/marker_right_joint/attach</attach_topic>
-      <output_topic>/model/auv/joint/marker_right_joint/state</output_topic>
-    </plugin>
-
-    <model name="torpedo_left">
-      <pose>0.35 0.12 0.0 0 0 3.14159</pose>
-      <link name="torpedo_left_link">
-        <inertial>
-          <mass>0.001</mass>
-          <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
-        </inertial>
-        <collision name="torpedo_left_collision">
-          <pose>-0.6732 1.2666 -0.8614 0 0 0</pose>
-          <geometry>
-            <mesh>
-              <uri>model://torPEDO/meshes/base_link.STL</uri>
-              <scale>1 1 1</scale>
-            </mesh>
-          </geometry>
-        </collision>
-        <visual name="torpedo_left_visual">
-          <pose>-0.6732 1.2666 -0.8614 0 0 0</pose>
-          <geometry>
-            <mesh>
-              <uri>model://torPEDO/meshes/base_link.STL</uri>
-              <scale>1 1 1</scale>
-            </mesh>
-          </geometry>
-          <material>
-            <ambient>0.792157 0.819608 0.933333 1</ambient>
-            <diffuse>0.792157 0.819608 0.933333 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
     <plugin filename="ignition-gazebo-detachable-joint-system"
             name="ignition::gazebo::systems::DetachableJoint">
       <parent_link>base_link</parent_link>
       <child_model>torpedo_left</child_model>
-      <child_link>torpedo_left_link</child_link>
+      <child_link>payload_link</child_link>
       <detach_topic>/model/auv/joint/torpedo_left_joint/detach</detach_topic>
       <attach_topic>/model/auv/joint/torpedo_left_joint/attach</attach_topic>
       <output_topic>/model/auv/joint/torpedo_left_joint/state</output_topic>
-    </plugin>
-
-    <model name="torpedo_right">
-      <pose>0.35 -0.12 0.0 0 0 3.14159</pose>
-      <link name="torpedo_right_link">
-        <inertial>
-          <mass>0.001</mass>
-          <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
-        </inertial>
-        <collision name="torpedo_right_collision">
-          <pose>-0.6732 1.2666 -0.8614 0 0 0</pose>
-          <geometry>
-            <mesh>
-              <uri>model://torPEDO/meshes/base_link.STL</uri>
-              <scale>1 1 1</scale>
-            </mesh>
-          </geometry>
-        </collision>
-        <visual name="torpedo_right_visual">
-          <pose>-0.6732 1.2666 -0.8614 0 0 0</pose>
-          <geometry>
-            <mesh>
-              <uri>model://torPEDO/meshes/base_link.STL</uri>
-              <scale>1 1 1</scale>
-            </mesh>
-          </geometry>
-          <material>
-            <ambient>0.792157 0.819608 0.933333 1</ambient>
-            <diffuse>0.792157 0.819608 0.933333 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-    <plugin filename="ignition-gazebo-detachable-joint-system"
-            name="ignition::gazebo::systems::DetachableJoint">
-      <parent_link>base_link</parent_link>
-      <child_model>torpedo_right</child_model>
-      <child_link>torpedo_right_link</child_link>
-      <detach_topic>/model/auv/joint/torpedo_right_joint/detach</detach_topic>
-      <attach_topic>/model/auv/joint/torpedo_right_joint/attach</attach_topic>
-      <output_topic>/model/auv/joint/torpedo_right_joint/state</output_topic>
     </plugin>
 
     <!-- NEW FINGER LINKS AND JOINTS ADDED HERE -->

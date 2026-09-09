@@ -9,8 +9,10 @@ topics:
   - name: /front_camera/image_raw
     active: true
 
+  # Unpublished unless simulator_bridge is launched with
+  # publish_stereo_frame:=true; /front_camera/rgbd_frame carries the same data.
   - name: /front_camera/oakd_frame
-    active: true
+    active: false
 
   - name: /bottom_camera/image_raw
     active: true
@@ -32,3 +34,7 @@ topics:
 
   - name: /keyboard/keypress
     active: true
+
+  # Recorded: it is what says where a run started and ended inside the bag.
+  - name: /simulator/run_state
+    active: false

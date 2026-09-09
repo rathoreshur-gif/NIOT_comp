@@ -1,0 +1,16 @@
+#!/usr/bin/python3
+"""Console-script wrapper for the octagon flagger.
+
+Same reason as the torpedo flagger next to it: a direct import rather than the
+setuptools `load_entry_point` stub, because that stub reads entry-point
+metadata baked into the sim image at build time, and a NEW executable cannot
+appear just by mounting source over the installed package.
+
+Rebuild the image and setup.py's console_scripts entry supersedes this.
+"""
+import sys
+
+from auv_scoring.octagon_flagger import main
+
+if __name__ == '__main__':
+    sys.exit(main())

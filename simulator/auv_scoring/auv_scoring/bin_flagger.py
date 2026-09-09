@@ -52,6 +52,11 @@ class BinFlagger(Node):
 
         self.bins_pub = self.create_publisher(String, '/scoring/bins', 10)
         self.event_pub = self.create_publisher(String, '/scoring/events', 10)
+        self.create_subscription(String, '/scoring/course', self.course_callback, 10)
+        # A marker that has been picked back up onto the hull is a new drop, so
+        # the "this one has already landed" latch has to go with it.
+        self.create_subscription(
+            String, '/scoring/payload_reloaded', self.reload_callback, 10)
         for spec in self.geometry['bins']:
             self.create_subscription(
                 Contacts, f'/model/{self.geometry["prop"]}/{spec["name"]}/contact',
@@ -84,6 +89,36 @@ class BinFlagger(Node):
         if entry is None:
             raise RuntimeError(f'{path}: no prop named "{self.geometry["prop"]}"')
         return pose_from_ground_truth(entry)
+
+    def course_callback(self, msg):
+        """Re-read the bin pose after a reset re-seeded the course.
+
+        Note what this cannot fix: a marker that has already been dropped stays
+        on the pool floor, because its DetachableJoint is only re-welded by a
+        relaunch. Clearing `landed` is therefore about the next run being able
+        to score at all, not about the markers being back on the vehicle.
+        """
+        path = msg.data.strip()
+        try:
+            prop_xyz, prop_rot = self._load_pose(path)
+        except (OSError, ValueError, KeyError, RuntimeError) as exc:
+            self.get_logger().error(
+                f'Ignoring course update {path}: {exc}. Still scoring against the '
+                'bin pose this run started with.')
+            return
+
+        self.prop_xyz, self.prop_rot = prop_xyz, prop_rot
+        self.landed = set()
+        self.get_logger().info(
+            f'Course reloaded from {path}; bins now at '
+            f'{np.round(self.prop_xyz, 3).tolist()}.')
+
+    def reload_callback(self, msg):
+        """A marker is back on the vehicle, so let it score again."""
+        name = msg.data.strip()
+        if name in self.landed:
+            self.landed.discard(name)
+            self.get_logger().info(f'{name} reloaded; ready to land again.')
 
     # -- detection ----------------------------------------------------------
 

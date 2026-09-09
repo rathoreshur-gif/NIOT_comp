@@ -50,6 +50,66 @@ defaults:
     rotation_deg: [0.0, 0.0, 0.0]
 
 # =====================================================================
+# RUN LIFECYCLE
+#
+# A run is armed, not free-running. The thrusters stay dead from the moment
+# Gazebo comes up until /simulator/start_run, and the clock starts on that
+# same call, so a controller that takes fifteen seconds to boot is not
+# billed for its own startup.
+#
+#   ros2 service call /simulator/start_run std_srvs/srv/Trigger
+#   ros2 service call /simulator/end_run   std_srvs/srv/Trigger
+#   ros2 service call /simulator/reset_run std_srvs/srv/Trigger
+#
+# From the competitor's domain, where services do not cross the bridge, the
+# same three commands are strings on a topic:
+#
+#   ros2 topic pub --once /simulator/run_control std_msgs/msg/String "data: start"
+#
+# and /simulator/run_state (auv_msgs/RunState) reports back.
+# =====================================================================
+run:
+  # Hard ceiling on one run, in SIMULATED seconds. Reaching it ends the run
+  # exactly as end_run would, except that there is no time left to pay a
+  # bonus on. This is the knob to change between runs.
+  time_limit: 1200.0        # 20 minutes
+
+  # Finishing early is worth points: the bonus is the unused time, paid at
+  # points_per_minute. Without the requires_tasks guard below, "start the run
+  # and immediately end it" would be the highest-scoring strategy there is.
+  time_bonus:
+    points_per_minute: 100.0
+    # true bills whole minutes only (11:20 unused -> 11 minutes); false pays
+    # the fraction too (-> 11.33), which avoids a 100-point cliff either side
+    # of a minute boundary.
+    whole_minutes_only: false
+    # Tasks that must have been ATTEMPTED before any bonus is paid. A task
+    # counts as attempted the moment its flagger reports the vehicle through
+    # it, whether or not the pass scored: the low-value half of the gate and
+    # the non-scoring side of a slalom pole both count, and for the slalom
+    # every layer must have been crossed. Surfacing early with the course
+    # untouched does not.
+    requires_tasks: [gate, slalom]
+
+  # reset_run puts the course and the vehicle back WITHOUT restarting Gazebo,
+  # which is the difference between forty practice runs in an evening and ten.
+  reset:
+    # Draw a fresh seed on each reset, so practice does not degenerate into
+    # memorising one layout. false re-poses everything to the same course.
+    reseed: true
+    # Seconds of SIM time to let the vehicle's momentum bleed off after the
+    # thrusters are cut, before it is teleported back to the start. Gazebo's
+    # set_pose moves a body, it does not stop one, so without this the vehicle
+    # arrives at the spawn still carrying the velocity it had at the finish.
+    settle_time: 1.0
+
+  # Where the end-of-run result JSON is written. null puts it beside the run's
+  # generated world and ground truth, which under docker-compose is the
+  # .docker-runs bind mount and therefore the one directory visible from the
+  # host.
+  results_dir: null
+
+# =====================================================================
 # WATER DISTURBANCE
 #
 # Pool water, not a river. Every component is a ZERO-MEAN Ornstein-
@@ -126,6 +186,27 @@ vehicle:
     translation: [0.186, 9.689, 0.204]
     rotation_deg: [0.0, 0.0, 3.0]
 
+  # What the vehicle carries, and where on the hull. One of each, both on the
+  # centreline. These spawn as top-level models at the vehicle's SAMPLED pose
+  # plus the offset below, which is what lets the AUV's DetachableJoints weld
+  # them on square - and, unlike a model nested inside the AUV, lets them be
+  # teleported back into place when the player presses the button again to
+  # reload. Poses are [x y z roll pitch yaw], metres and degrees, in the
+  # vehicle's frame; they have to match PAYLOAD_MOUNTS in simulator_bridge.py.
+  payloads:
+    - name: marker_left
+      uri: model://payload_marker
+      pose: [0.0, 0.0, -0.10, 0.0, 0.0, 0.0]
+    - name: torpedo_left
+      uri: model://payload_torpedo
+      # Roll 180 stands the torpedo the right way up. The mesh is authored nose
+      # -down in its own frame, which nobody noticed while it was drawn at 1x
+      # and the size of a thumb; at 3x it is unmistakable. Roll and not pitch:
+      # the tube's long axis is X, so rolling about X spins it about its own
+      # length and leaves the nose pointing forward, which is what the firing
+      # impulse assumes. Must match PAYLOAD_MOUNTS in simulator_bridge.py.
+      pose: [0.35, 0.0, 0.0, 180.0, 0.0, 180.0]
+
 # ---------------------------------------------------------------------
 # Tasks. Each has an `origin` frame and one or more `props` placed
 # relative to it.
@@ -174,9 +255,12 @@ tasks:
       opening_y: [-1.252, 1.847]
       opening_z: [-1.208, 0.301]
       divider_y: 0.2974
+      # Either half is worth the same. The gate is a gate: at an outreach
+      # stand, telling a ten-year-old that they went through the wrong side of
+      # a thing they just flew through is not the lesson.
       points:
         left: 50           # awarded once, on the first forward pass
-        right: 100
+        right: 50
         collision: -30     # each time the vehicle strikes the gate frame
       # Contacts chatter at the sensor rate while the hull rests against the
       # frame, so a strike only counts again after this many seconds clear.
@@ -219,12 +303,14 @@ tasks:
       opening_y: [-1.5, 1.5]
       opening_z: [0.0, 0.9]
       divider_y: 0.0
-      # Which side of the red pole scores. "left" or "right" - passing the other
-      # side is detected and logged but earns nothing. Left/right are as seen by
-      # a vehicle making the intended forward run.
-      required_side: left
+      # Which side of the red pole scores: "left", "right", or "any" for either.
+      # Left/right are as seen by a vehicle making the intended forward run.
+      # "any" is the demo setting - the skill being shown off is getting through
+      # the gap at all, and a layer taken on the wrong side still had to be
+      # flown. Set it back to "left" for a scored competition run.
+      required_side: any
       points:
-        layer: 50        # per layer cleared on the required side, 3 layers
+        layer: 100       # per layer cleared, 3 layers
 
   # -------------------------------------------------------------------
   # TASK 3 - BINS
@@ -253,14 +339,19 @@ tasks:
     scoring:
       prop: task3_bins
       wall_inset: 0.02
-      markers: [marker_left, marker_right]
+      markers: [marker_left]
       bins:
         - {name: box_1, x: [0.636, 0.986], y: [-0.995, -0.645], z: [1.260, 1.560]}
         - {name: box_2, x: [1.382, 1.732], y: [-0.738, -0.388], z: [1.293, 1.593]}
         - {name: box_3, x: [0.309, 0.659], y: [-0.240,  0.110], z: [1.459, 1.759]}
         - {name: box_4, x: [1.055, 1.405], y: [-0.024,  0.326], z: [1.592, 1.892]}
+      # PER BIN, and each bin only ever once - not per drop. The marker can be
+      # picked back up and dropped again as often as anyone likes (that is what
+      # makes the stand playable), so paying per drop meant a player could park
+      # over one bin and farm it forever. Four bins, so 2000 is the most this
+      # task can be worth.
       points:
-        marker_in_bin: 50    # per marker landed, so both droppers can score
+        marker_in_bin: 500
 
   # -------------------------------------------------------------------
   # TASK 4 - TORPEDOES
@@ -281,7 +372,39 @@ tasks:
       # so negating the minimum stands it exactly on the floor.
       - uri: model://rs2026_torpedo
         name: task4_torpedo
-        pose: [0.0, 0.0, 0.549878, 0.0, 0.0, 0.0]
+        pose: [0.0, 0.0, 0.549568, 0.0, 0.0, 0.0]
+
+    # The four target holes, measured off the board mesh in the PROP's frame
+    # after the orientation fix in rs2026_torpedo/model.sdf. Local X is the
+    # shoot-through axis, so a hole is a rectangle in local Y (across) and
+    # Z (up), and a torpedo scores when the point at which it crosses the
+    # board's plane falls inside one of them.
+    #
+    # Two of the openings are ~0.12 m and two ~0.10 m; the board also has a
+    # wide 0.60 x 0.30 slot along the top, which is deliberately NOT listed -
+    # it is the frame's gap, not a target, and it is large enough that
+    # counting it would make missing almost impossible.
+    #
+    # A torpedo is 24 mm across, so even the smallest hole is four times its
+    # diameter. payload_torpedo is DRAWN at 3x for the outreach demo, but only
+    # its visual is scaled - the collision that has to fit through these holes
+    # is still 24 mm, which is what keeps a sloppy shot scoring. The bounds are
+    # shrunk by `edge_inset` so that clipping the very rim does not count as a
+    # clean pass.
+    scoring:
+      prop: task4_torpedo
+      edge_inset: 0.005
+      torpedoes: [torpedo_left]
+      holes:
+        - {name: upper_left,  y: [-0.2730, -0.1501], z: [-0.0275,  0.0931]}
+        - {name: centre,      y: [-0.0483,  0.0500], z: [-0.0407,  0.0564]}
+        - {name: lower_right, y: [ 0.1431,  0.2660], z: [-0.2925, -0.1718]}
+        - {name: lower,       y: [-0.0553,  0.0413], z: [-0.4158, -0.3187]}
+      # PER HOLE, each hole once. Same reasoning as the bins: the torpedo
+      # reloads on a button press, so scoring per shot is an infinite supply of
+      # points. Four holes listed, so 2000 is the ceiling.
+      points:
+        torpedo_in_hole: 500
 
   # -------------------------------------------------------------------
   # TASK 5 - OCTAGON
@@ -338,3 +461,38 @@ tasks:
       - uri: model://rs2026_pickup_screw
         name: pickup_screw
         pose: [-0.1700, 0.3000, 0.530747, 0.0, 0.0, 0.0]
+
+    # The two side pads - the boards carrying the Task 5 images, one either
+    # side of the mid table - are where a collected object is delivered.
+    # Bounds measured off ocatgon_table.glb in the PROP's frame, after the
+    # roll +90 the model applies to stand the glTF Y-up export into Z-up:
+    #
+    #   Cube.005  x [-0.270, +0.270]  y [+0.590, +0.956]  top z +0.049
+    #   Cube.006  x [-0.270, +0.270]  y [-0.953, -0.587]  top z +0.049
+    #   mid table x [-0.600, +0.600]  y [-0.600, +0.600]  top z +0.050
+    #
+    # They are flat pads, not open boxes, so "in" means "come to rest on".
+    # An object counts when it is inside a pad's footprint, sitting within
+    # `settle_height` of its top face, and has stopped moving - which is what
+    # separates delivered from carried over or still falling. The gripper only
+    # releases on an explicit open, so this cannot fire while an object is
+    # still held: a held object moves with the vehicle and never settles.
+    #
+    # The footprint is shrunk by `edge_inset` so an object teetering half off
+    # the edge is not paid for; the pads are 0.54 x 0.366, so 0.02 is a real
+    # margin without making the target mean.
+    scoring:
+      prop: task5_octagon
+      edge_inset: 0.02
+      settle_height: 0.09      # m above the pad's top face
+      settle_speed: 0.05       # m/s, below which it counts as at rest
+      settle_time: 0.5         # s it must stay that way
+      objects: [pickup_bandaid, pickup_plug, pickup_capsule, pickup_screw]
+      pads:
+        - {name: pad_port,      x: [-0.270,  0.270], y: [ 0.590,  0.956], z: 0.049}
+        - {name: pad_starboard, x: [-0.270,  0.270], y: [-0.953, -0.587], z: 0.049}
+      # Per OBJECT delivered, each object once. Four objects on the table, so
+      # 4000 is the ceiling - deliberately the biggest prize on the course,
+      # because grasping and placing is the hardest thing the vehicle does.
+      points:
+        object_in_box: 1000

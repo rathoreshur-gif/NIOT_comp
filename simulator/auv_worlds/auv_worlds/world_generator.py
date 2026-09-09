@@ -133,6 +133,41 @@ def _placement(rng, task_name, origin, task_rand, jitter, prop, index):
     }
 
 
+def _payload_placements(vehicle, placement):
+    """Where the vehicle's carried payloads have to spawn.
+
+    A DetachableJoint welds child to parent at whatever relative pose it finds
+    at world load, so a payload that spawns anywhere but its mount point is
+    welded on crooked and stays that way. The vehicle's own pose is sampled, so
+    these have to be composed against the sample rather than written into the
+    world by hand.
+
+    They are NOT returned as placed props. Ground truth does not want them - a
+    payload is not a course prop - and, more importantly, reset_run teleports
+    everything in `placed`: a welded payload and its vehicle are one body to the
+    physics engine, so moving them separately fights the joint.
+    """
+    payloads = vehicle.get('payloads') or []
+    if not payloads:
+        return []
+
+    origin_xyz, origin_rot = _as_pose(placement['actual'], 'vehicle.actual')
+    out = []
+    for index, payload in enumerate(payloads):
+        where = f'vehicle.payloads[{index}]'
+        for key in ('uri', 'name'):
+            if not payload.get(key):
+                raise LayoutError(f'{where}: missing required key "{key}"')
+        local_xyz, local_rot = _as_pose(payload.get('pose'), where)
+        out.append({
+            'name': payload['name'],
+            'uri': payload['uri'],
+            '_sdf_pose': _sdf_pose(origin_xyz + origin_rot.apply(local_xyz),
+                                   origin_rot * local_rot),
+        })
+    return out
+
+
 def place_props(layout, seed):
     """Sample a full course. Returns the list of placed props, in layout order."""
     rng = random.Random(seed)
@@ -143,8 +178,10 @@ def place_props(layout, seed):
     if vehicle:
         origin = _as_pose(vehicle.get('pose'), 'vehicle')
         task_rand = _sample(rng, vehicle.get('randomize', defaults), 'vehicle.randomize')
-        placed.append(_placement(rng, 'vehicle', origin, task_rand, None,
-                                 vehicle, 0))
+        placement = _placement(rng, 'vehicle', origin, task_rand, None, vehicle, 0)
+        # Private key: stripped from ground truth, read by build_world_tree.
+        placement['_payloads'] = _payload_placements(vehicle, placement)
+        placed.append(placement)
 
     tasks = layout.get('tasks') or {}
     if not isinstance(tasks, dict):
@@ -223,8 +260,49 @@ def build_world_tree(base_world_path, placed, seed):
         ET.SubElement(include, 'name').text = prop['name']
         ET.SubElement(include, 'pose').text = prop['_sdf_pose']
 
+        # The vehicle's carried payloads, spawned at their mount points so the
+        # AUV's DetachableJoints weld them on square. Emitted here rather than
+        # as placed props of their own so nothing else treats them as course
+        # geometry - see _payload_placements.
+        for payload in prop.get('_payloads') or []:
+            include = ET.SubElement(world, 'include')
+            ET.SubElement(include, 'uri').text = payload['uri']
+            ET.SubElement(include, 'name').text = payload['name']
+            ET.SubElement(include, 'pose').text = payload['_sdf_pose']
+
     ET.indent(tree, space='  ')
     return tree
+
+
+def make_run_id(seed):
+    """Name one sampling of the course. Unique per second, and self-describing."""
+    return f'{datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")}_seed{seed}'
+
+
+def write_ground_truth(output_dir, run_id, seed, layout_path, base_world, world_path,
+                       placed):
+    """Record the sampled poses beside the run's world. Returns the path written.
+
+    Kept out of the world file and off the ROS graph so it can be withheld from
+    competitors; the flaggers read it. Separate from world generation because
+    reset_run re-samples the course inside a Gazebo that is already running -
+    new poses and new ground truth, but no new world file.
+    """
+    truth_dir = os.path.join(output_dir, 'ground_truth')
+    os.makedirs(truth_dir, exist_ok=True)
+    truth_path = os.path.join(truth_dir, f'competition_{run_id}.json')
+    with open(truth_path, 'w') as handle:
+        json.dump({
+            'run_id': run_id,
+            'seed': seed,
+            'generated_utc': datetime.now(timezone.utc).isoformat(),
+            'layout': os.path.abspath(layout_path),
+            'base_world': base_world,
+            'world': world_path,
+            'props': [{k: v for k, v in prop.items() if not k.startswith('_')}
+                      for prop in placed],
+        }, handle, indent=2)
+    return truth_path
 
 
 def generate_world(layout_path, seed=None, output_dir=None, models_dir=None):
@@ -255,28 +333,13 @@ def generate_world(layout_path, seed=None, output_dir=None, models_dir=None):
 
     output_dir = output_dir or os.path.join(tempfile.gettempdir(), 'matsya_competition')
     os.makedirs(output_dir, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
-    run_id = f'{stamp}_seed{seed}'
+    run_id = make_run_id(seed)
 
     world_path = os.path.join(output_dir, f'competition_{run_id}.sdf')
     tree.write(world_path, encoding='utf-8', xml_declaration=True)
 
-    # Kept out of the world file and off the ROS graph so it can be withheld
-    # from competitors. The scorer reads this.
-    truth_dir = os.path.join(output_dir, 'ground_truth')
-    os.makedirs(truth_dir, exist_ok=True)
-    truth_path = os.path.join(truth_dir, f'competition_{run_id}.json')
-    with open(truth_path, 'w') as handle:
-        json.dump({
-            'run_id': run_id,
-            'seed': seed,
-            'generated_utc': datetime.now(timezone.utc).isoformat(),
-            'layout': os.path.abspath(layout_path),
-            'base_world': base_world,
-            'world': world_path,
-            'props': [{k: v for k, v in p.items() if not k.startswith('_')}
-                      for p in placed],
-        }, handle, indent=2)
+    truth_path = write_ground_truth(output_dir, run_id, seed, layout_path,
+                                    base_world, world_path, placed)
 
     return {
         'seed': seed,

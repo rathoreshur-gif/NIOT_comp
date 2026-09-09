@@ -66,6 +66,7 @@ class GateFlagger(Node):
         self.event_pub = self.create_publisher(String, '/scoring/events', 10)
         self.create_subscription(
             Odometry, self.get_parameter('odometry_topic').value, self.odometry_callback, 10)
+        self.create_subscription(String, '/scoring/course', self.course_callback, 10)
 
         self.passages = 0
 
@@ -116,6 +117,30 @@ class GateFlagger(Node):
             self.geometry['prop'], xyz, rot,
             self.geometry['opening_y'], self.geometry['opening_z'],
             self.geometry['divider_y'], vehicle['actual'][:3])
+
+    def course_callback(self, msg):
+        """Rebuild for a course that has moved under us.
+
+        reset_run re-samples the layout and teleports the props without
+        restarting Gazebo, so the plane this was built from is no longer where
+        the gate is. Rebuilding from the new ground truth also re-arms the
+        crossing detector, which otherwise still remembers which side of the old
+        plane the vehicle was last seen on.
+        """
+        path = msg.data.strip()
+        try:
+            plane = self._load_pose(path)
+        except (OSError, ValueError, KeyError, RuntimeError) as exc:
+            self.get_logger().error(
+                f'Ignoring course update {path}: {exc}. Still scoring against the '
+                'gate pose this run started with.')
+            return
+
+        self.plane = plane
+        self.passages = 0
+        self.get_logger().info(
+            f'Course reloaded from {path}; gate now at '
+            f'{np.round(self.plane.xyz, 3).tolist()}.')
 
     # -- detection ----------------------------------------------------------
 

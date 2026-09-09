@@ -434,9 +434,9 @@
   lazy: false
   direction: ROS_TO_GZ
 
-# --- Marker droppers (ROS to GZ) ---
-# The DetachableJoint plugins for the two markers are declared in the AUV model
-# and auto-attach at world load, so the markers ride along until dropped.
+# --- Marker dropper (ROS to GZ) ---
+# The marker's DetachableJoint plugin is declared in the AUV model and
+# auto-attaches at world load, so the marker rides along until dropped.
 - ros_topic_name: "/model/auv/marker_left/drop"
   gz_topic_name: "/model/auv/joint/marker_left_joint/detach"
   ros_type_name: "std_msgs/msg/Empty"
@@ -446,14 +446,19 @@
   lazy: false
   direction: ROS_TO_GZ
 
-- ros_topic_name: "/model/auv/marker_right/drop"
-  gz_topic_name: "/model/auv/joint/marker_right_joint/detach"
+# The same joint's ATTACH topic. Publishing here re-welds the marker to the
+# hull, which is how a second press of the drop button reloads it. The teleport
+# that puts the marker back in its cradle first is simulator_bridge's job - the
+# weld itself is fixed at whatever relative pose it finds.
+- ros_topic_name: "/model/auv/marker_left/reload"
+  gz_topic_name: "/model/auv/joint/marker_left_joint/attach"
   ros_type_name: "std_msgs/msg/Empty"
   gz_type_name: "gz.msgs.Empty"
   publisher_queue_size: 10
   subscriber_queue_size: 10
   lazy: false
   direction: ROS_TO_GZ
+
 
 # --- Bin contact sensors (GZ to ROS) ---
 # One per bin. The contact message carries both collision names and the world
@@ -524,3 +529,116 @@
   subscriber_queue_size: 10
   lazy: false
   direction: GZ_TO_ROS
+
+# --- Scoreboard reset button -> run manager (GZ to ROS) ---
+# The panel's RESET button publishes "reset" here and it lands on the same
+# /simulator/run_control topic a competitor uses, so the button can do nothing
+# a competitor could not. Named /gui/run_control on the Gazebo side rather than
+# sharing the ROS name, so the bridge is one-directional and the panel can never
+# hear its own command echoed back.
+- ros_topic_name: "/simulator/run_control"
+  gz_topic_name: "/gui/run_control"
+  ros_type_name: "std_msgs/msg/String"
+  gz_type_name: "gz.msgs.StringMsg"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+# --- Torpedoes (ROS to GZ) ---
+# Same DetachableJoint pattern as the marker above: torpedo_left is a nested
+# model in the AUV that rides along until its detach topic is poked.
+#
+# Note this only RELEASES the torpedo. The launch itself is a one-step wrench
+# simulator_bridge applies just after, on /world/underwater_pool/wrench below.
+- ros_topic_name: "/model/auv/torpedo_left/fire"
+  gz_topic_name: "/model/auv/joint/torpedo_left_joint/detach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+# The same joint's ATTACH topic. Publishing here re-welds the torpedo to the
+# hull, which is how a second press of the fire button reloads it. The teleport
+# that puts the torpedo back in its tube first is simulator_bridge's job - the
+# weld itself is fixed at whatever relative pose it finds.
+- ros_topic_name: "/model/auv/torpedo_left/reload"
+  gz_topic_name: "/model/auv/joint/torpedo_left_joint/attach"
+  ros_type_name: "std_msgs/msg/Empty"
+  gz_type_name: "gz.msgs.Empty"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+
+# --- Torpedo firing impulse (ROS to GZ) ---
+# ApplyLinkWrench listens here and applies the wrench for exactly one physics
+# step (2 ms), so what is published is an impulse of force x 0.002 N.s. That is
+# the only way to impart velocity to a detached body from outside the sim.
+- ros_topic_name: "/world/underwater_pool/wrench"
+  gz_topic_name: "/world/underwater_pool/wrench"
+  ros_type_name: "ros_gz_interfaces/msg/EntityWrench"
+  gz_type_name: "gz.msgs.EntityWrench"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: ROS_TO_GZ
+
+# --- Torpedo pose (GZ to ROS), for the torpedo flagger ---
+# The torpedo is a top-level model, so its OdometryPublisher reports a WORLD
+# pose and the flagger can use it as it stands. The world's own
+# dynamic_pose/info would carry it too, but reaches ROS as a PoseArray with the
+# names dropped, so there would be no telling which pose is the torpedo.
+- ros_topic_name: "/model/torpedo_left/odometry"
+  gz_topic_name: "/model/torpedo_left/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+# The four Task 5 pickups, for octagon_flagger. Same reasoning as the torpedo
+# above: each carries its own OdometryPublisher, so the world pose AND the
+# twist arrive named. The twist is what makes "delivered" mean come to rest on
+# a pad rather than merely pass over one.
+- ros_topic_name: "/model/pickup_bandaid/odometry"
+  gz_topic_name: "/model/pickup_bandaid/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/pickup_plug/odometry"
+  gz_topic_name: "/model/pickup_plug/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/pickup_capsule/odometry"
+  gz_topic_name: "/model/pickup_capsule/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/pickup_screw/odometry"
+  gz_topic_name: "/model/pickup_screw/odometry"
+  ros_type_name: "nav_msgs/msg/Odometry"
+  gz_type_name: "gz.msgs.Odometry"
+  publisher_queue_size: 10
+  subscriber_queue_size: 10
+  lazy: false
+  direction: GZ_TO_ROS
+
+

@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(unique_identifier_msgs REQUIRED)  # Added this dependency
 find_package(rosidl_default_generators REQUIRED)
 
@@ -60,7 +61,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/BMP.msg"
   "msg/MapGui.msg"
   "msg/RGBDFrame.msg"
-  DEPENDENCIES geometry_msgs sensor_msgs unique_identifier_msgs
+  "msg/RunState.msg"
+  DEPENDENCIES geometry_msgs sensor_msgs std_msgs unique_identifier_msgs
 )
 
 # Testing

@@ -1,0 +1,17 @@
+# NVIDIA GPU overlay for the testing container.
+#
+# The same trade-off as docker-compose.gpu.yml, for the other stack: Gazebo
+# renders the camera sensors on the GPU, so without this the container falls
+# back to the integrated GPU and the real-time factor drops sharply even on a
+# machine with a discrete card.
+#
+# NOT merged by default: `runtime: nvidia` makes the container fail to start
+# outright on a machine without the NVIDIA Container Toolkit. ./run.sh adds this
+# file only when the toolkit is actually installed.
+#
+#   ./run.sh test_up               # auto-detects, uses the GPU when available
+#   NIOT_GPU=0 ./run.sh test_up    # force off
+#   NIOT_GPU=1 ./run.sh test_up    # force on (fails loudly with no toolkit)
+services:
+  test:
+    runtime: nvidia

@@ -24,9 +24,12 @@ setup(
     entry_points={
         'console_scripts': [
             'gate_flagger = auv_scoring.gate_flagger:main',
+            'run_manager = auv_scoring.run_manager:main',
             'score_keeper = auv_scoring.score_keeper:main',
             'slalom_flagger = auv_scoring.slalom_flagger:main',
             'bin_flagger = auv_scoring.bin_flagger:main',
+            'torpedo_flagger = auv_scoring.torpedo_flagger:main',
+            'octagon_flagger = auv_scoring.octagon_flagger:main',
         ],
     },
 )

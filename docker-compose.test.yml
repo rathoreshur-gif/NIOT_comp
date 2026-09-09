@@ -1,0 +1,109 @@
+# Team testing stack: one container holding the whole workspace.
+#
+#   ./run.sh test_up        start the simulator + simbridge
+#   ./run.sh test_shell     a shell in the same container, workspace sourced
+#   ./run.sh test_down      stop it
+#
+# This is not the competition stack and does not share anything with it. There
+# is no domain bridge and no second container: the simulator, the simbridge and
+# whatever the team's own nodes are is all one ROS graph in one container, which
+# is what testing against the vehicle actually wants. Run it under its own
+# Compose project (./run.sh does this) so `./run.sh down` cannot take it with it.
+#
+#   SIM_GUI=false ./run.sh test_up       headless, no X11 needed
+#   SIM_SEED=1234 ./run.sh test_up       replay a specific course
+#   SIM_SCORING=true ./run.sh test_up    with the task flaggers running
+#   TEST_DOMAIN_ID=7 ./run.sh test_up    off the default domain
+#
+# Two mounts do the real work here:
+#
+#   /ros2_ws           the host's ~/ros2_ws, whoever is running this. Their
+#                      Matsya_ROS2 checkout, their branches, their edits — live,
+#                      not a copy. NIOT_WS overrides which workspace that is.
+#
+#   /ros2_ws/src/niot_simulator
+#                      the simulator, exported from a pinned commit rather than
+#                      taken from the working tree. ./run.sh test_up refreshes
+#                      it. See TESTING.md for why it is pinned.
+#
+# Build artefacts go to the `ws` volume at /opt/testws, never into the mounted
+# workspace's own build/ and install/ — those are the host's native build, and
+# a container writing into them corrupts both sides.
+services:
+  test:
+    build:
+      context: .
+      dockerfile: testing/docker/Dockerfile
+    image: niot-test:jazzy
+    container_name: niot-test
+    stdin_open: true
+    tty: true
+
+    # Gazebo's transport layer and DDS both want unrestricted multicast/shared
+    # memory. Host networking alone is not enough, because FastDDS advertises
+    # shared-memory locators that a process in a different IPC namespace cannot
+    # reach — discovery stalls rather than falling back to UDP. Together these
+    # also mean a `ros2 topic echo` on the *host* sees the container's graph,
+    # which is half the point of a testing container.
+    network_mode: host
+    ipc: host
+
+    # competition.launch.py starts Gazebo under `nice -n -10`. Without this the
+    # renice fails and Gazebo runs at default priority.
+    cap_add:
+      - SYS_NICE
+
+    # `ros2 launch` is PID 1 here, which reaps no zombies and handles signals
+    # poorly. tini fixes both.
+    init: true
+
+    # Gazebo needs time to tear down; the 10s default SIGKILLs it mid-shutdown.
+    stop_grace_period: 30s
+
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_X11_NO_MITSHM=1
+      - XDG_RUNTIME_DIR=/tmp/runtime-root
+      # 0 by default so that a `ros2` command typed on the host, which is also
+      # domain 0, talks to this container without any setup.
+      - ROS_DOMAIN_ID=${TEST_DOMAIN_ID:-0}
+      - TEST_WS_BASE=/opt/testws
+      - TEST_SKIP_DIRS=${TEST_SKIP_DIRS:-Matsya_ROS2_Simulator}
+      - TEST_SYMLINK=${TEST_SYMLINK:-true}
+      - TEST_REBUILD=${TEST_REBUILD:-0}
+      - SIM_GUI=${SIM_GUI:-true}
+      - SIM_SEED=${SIM_SEED:-auto}
+      - SIM_SCORING=${SIM_SCORING:-false}
+      - SIM_TELEOP=${SIM_TELEOP:-false}
+      - SIM_PAUSED=${SIM_PAUSED:-false}
+      - SIM_CURRENT=${SIM_CURRENT:-true}
+      # Ignored unless the container is started with the nvidia runtime; see
+      # docker-compose.test.gpu.yml.
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # The runner's own workspace. Absolute, and exported by ./run.sh, because
+      # a relative path here would be resolved against this repo rather than
+      # against wherever the workspace actually is.
+      - ${NIOT_WS:?run ./run.sh test_up, which sets this}:/ros2_ws
+      # The pinned simulator, laid over the workspace's src. Writable because
+      # colcon's --symlink-install writes .egg-info back into Python sources.
+      - ./.niot-test/simulator:/ros2_ws/src/niot_simulator
+      # Generated worlds and ground-truth JSON, kept readable from the host.
+      - ./.niot-test/runs:/tmp/matsya_competition
+      - ws:/opt/testws
+
+    # Hardware GL through the host's render nodes. Drop this block (and set
+    # LIBGL_ALWAYS_SOFTWARE=1) if the machine has no /dev/dri.
+    devices:
+      - /dev/dri:/dev/dri
+
+    command: /usr/local/bin/start_sim.sh
+
+volumes:
+  # The container's build/ install/ log/. A named volume rather than a bind
+  # mount so it survives `test_down`, stays off the host filesystem, and cannot
+  # collide with the host's native colcon build of the same packages.
+  ws:

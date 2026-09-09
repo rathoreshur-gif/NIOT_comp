@@ -13,6 +13,12 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'worlds'), glob('worlds/*.sdf')),
+        # camera_director, run by competition.launch.py. A plain script in
+        # share/ rather than a console_script on purpose: the demo overlay
+        # already mounts this directory, so it can be edited and picked up by a
+        # restart, while a new console_script needs entry-point metadata that
+        # only an image rebuild writes.
+        (os.path.join('share', package_name, 'scripts'), glob('scripts/*.py')),
         (os.path.join('share', package_name, 'media', 'textures'),
          glob('media/textures/*')),
         (os.path.join('share', package_name, 'models', 'auv_test'),

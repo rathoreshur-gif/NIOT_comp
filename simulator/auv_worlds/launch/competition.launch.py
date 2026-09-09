@@ -13,6 +13,9 @@ config/competition_config.yaml.
 """
 
 import os
+import xml.etree.ElementTree as ET
+
+import yaml
 
 from ament_index_python.packages import get_package_share_directory
 from auv_worlds.world_generator import generate_world, LayoutError
@@ -30,6 +33,7 @@ def _launch_setup(context, *args, **kwargs):
     seed_arg = LaunchConfiguration('seed').perform(context).strip()
     output_dir = LaunchConfiguration('output_dir').perform(context).strip() or None
     gui = LaunchConfiguration('gui').perform(context).lower() in ('true', '1', 'yes')
+    lifecycle = LaunchConfiguration('lifecycle').perform(context).lower() in ('true', '1', 'yes')
 
     seed = None if seed_arg in ('', 'auto') else int(seed_arg)
 
@@ -39,6 +43,20 @@ def _launch_setup(context, *args, **kwargs):
         # Raising here aborts the launch with the YAML problem front and centre,
         # rather than handing Gazebo a world that was never written.
         raise RuntimeError(f'competition config is invalid: {exc}') from exc
+
+    # The run manager talks to Gazebo's own services, which are namespaced by the
+    # world's name rather than by the file it came from. Read it rather than
+    # hardcode "underwater_pool", so changing base_world does not silently break
+    # reset_run.
+    world_name = ET.parse(run['world']).getroot().find('world').get('name')
+
+    # The camera follows the vehicle by MODEL NAME, which the config owns. Read
+    # it rather than hardcode "auv", for the same reason world_name is read
+    # above: renaming the vehicle should not silently leave the camera pointing
+    # at nothing.
+    with open(config_path) as handle:
+        vehicle_name = str(
+            ((yaml.safe_load(handle) or {}).get('vehicle') or {}).get('name', 'auv'))
 
     # The Scoreboard GUI plugin lives in auv_gui; Gazebo only finds GUI plugins
     # on GZ_GUI_PLUGIN_PATH, which nothing sets for us.
@@ -154,6 +172,51 @@ def _launch_setup(context, *args, **kwargs):
         condition=IfCondition(LaunchConfiguration('scoring')),
     )
 
+    torpedo_flagger = Node(
+        package='auv_scoring',
+        executable='torpedo_flagger',
+        name='torpedo_flagger',
+        parameters=[{
+            'ground_truth_file': run['ground_truth'],
+            'config_file': config_path,
+            'use_sim_time': True,
+        }],
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('scoring')),
+    )
+
+    # Points the GUI camera at the vehicle and keeps it there, and serves the
+    # FollowCam panel's buttons. A SEPARATE PROCESS on purpose, and it has to
+    # be: /gui/follow is advertised by the GUI, and gz-transport will not route
+    # a request from a node back to a service advertised by its own process, so
+    # the panel cannot call it and something outside has to. See the script.
+    #
+    # Only with a GUI - there is no camera to point in headless mode.
+    camera_director = ExecuteProcess(
+        cmd=['python3',
+             os.path.join(pkg_auv_worlds, 'scripts', 'camera_director.py'),
+             '--target', vehicle_name,
+             '--offset', '-2.0,1.0,1.0'],
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('gui')),
+    )
+
+    # Task 5. Watches the four pickups' odometry rather than a contact sensor -
+    # see the module docstring for why a placed object is a pose question and a
+    # thrown marker is a contact one.
+    octagon_flagger = Node(
+        package='auv_scoring',
+        executable='octagon_flagger',
+        name='octagon_flagger',
+        parameters=[{
+            'ground_truth_file': run['ground_truth'],
+            'config_file': config_path,
+            'use_sim_time': True,
+        }],
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('scoring')),
+    )
+
     score_keeper = Node(
         package='auv_scoring',
         executable='score_keeper',
@@ -165,13 +228,34 @@ def _launch_setup(context, *args, **kwargs):
 
     # Off by default, matching the other launch files in this package, which
     # leave simulator_bridge to be started separately.
+    #
+    # start_disarmed follows the lifecycle argument: with a run manager on the
+    # graph the thrusters belong to /simulator/start_run, and without one nobody
+    # would ever unkill them.
     simulator_bridge = Node(
         package='auv_simbridge',
         executable='simulator_bridge',
         name='simulator_bridge',
-        parameters=[{'use_sim_time': True}],
+        parameters=[{'use_sim_time': True, 'start_disarmed': lifecycle}],
         output='screen',
         condition=IfCondition(LaunchConfiguration('simulator_bridge')),
+    )
+
+    # Owns the run: start/end/reset, the clock, and the thruster arming. It reads
+    # the same ground truth the flaggers do, because a reset re-samples the
+    # course from the layout that produced it.
+    run_manager = Node(
+        package='auv_scoring',
+        executable='run_manager',
+        name='run_manager',
+        parameters=[{
+            'ground_truth_file': run['ground_truth'],
+            'config_file': config_path,
+            'world': world_name,
+            'use_sim_time': True,
+        }],
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('lifecycle')),
     )
 
     return [
@@ -184,8 +268,12 @@ def _launch_setup(context, *args, **kwargs):
         gate_flagger,
         slalom_flagger,
         bin_flagger,
+        torpedo_flagger,
+        octagon_flagger,
+        camera_director,
         score_keeper,
         simulator_bridge,
+        run_manager,
     ]
 
 
@@ -238,6 +326,13 @@ def generate_launch_description():
             'scoring',
             default_value='true',
             description='Run the task flaggers (gate for now)',
+        ),
+        DeclareLaunchArgument(
+            'lifecycle',
+            default_value='true',
+            description='Run the start_run/end_run/reset_run manager, and hold the '
+                        'thrusters dead until start_run. false restores the old '
+                        'free-running behaviour.',
         ),
         DeclareLaunchArgument(
             'simulator_bridge',

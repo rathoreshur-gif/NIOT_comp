@@ -25,6 +25,9 @@ setup(
     entry_points={
         'console_scripts': [
             'basic_controller = competitor_controller.basic_controller:main',
+            # Demo-only: gamepad teleop. Separate entry point and separate
+            # launch file, so the competition controller above is untouched.
+            'gamepad_controller = competitor_controller.gamepad_controller:main',
         ],
     },
 )

@@ -91,12 +91,17 @@ competitor:
 | 0 → 1 | `/localization/pose` | `auv_msgs/msg/AuvState` |
 | 0 → 1 | `/front_camera/image_raw` | `sensor_msgs/msg/Image` |
 | 0 → 1 | `/bottom_camera/image_raw` | `sensor_msgs/msg/Image` |
-| 0 → 1 | `/front_camera/oakd_frame` | `auv_msgs/msg/StereoVisionFrame` |
 | 0 → 1 | `/front_camera/rgbd_frame` | `auv_msgs/msg/RGBDFrame` |
+| 0 → 1 | `/simulator/run_state` | `auv_msgs/msg/RunState` |
 | 1 → 0 | `/controller/thruster_forces` | `auv_msgs/msg/ThrusterForces` |
+| 1 → 0 | `/simulator/run_control` | `std_msgs/msg/String` |
 
-`/scoring/*`, the ground-truth flaggers, the raw `/model/auv/*` topics and the
-`/simulator/*` services stay inside domain 0. Confirm that holds:
+`/scoring/*`, the ground-truth flaggers, the raw `/model/auv/*` topics and every
+`/simulator/*` **service** stay inside domain 0. The run lifecycle is the one
+thing that has to reach the competitor - it needs to know it is live, and to be
+able to end its own run - so `run_manager` mirrors its three Trigger services
+onto the last two topics above: state out, one-word commands back. Confirm the
+rest still holds:
 
 ```bash
 ./docker/run.sh topics sim          # the full graph

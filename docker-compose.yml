@@ -65,9 +65,15 @@ services:
 
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      # Generated worlds and ground-truth JSON land in the container's tmp;
-      # bind-mounting keeps a run's artefacts readable from the host.
+      # Generated worlds, ground-truth JSON and the end-of-run result files land
+      # in the container's tmp; bind-mounting keeps a run's artefacts readable
+      # from the host.
       - ./.docker-runs:/tmp/matsya_competition
+      # The course layout, the run's time limit and every scoring weight.
+      # Mounted rather than left baked into the image for the same reason
+      # domain_bridge.yaml is: editing the time limit between runs should be a
+      # `docker compose restart sim`, not a rebuild.
+      - ./simulator/auv_worlds/config/competition_config.yaml:/etc/niot/competition_config.yaml:ro
 
     # Hardware GL through the host's render nodes. Drop this block (and set
     # LIBGL_ALWAYS_SOFTWARE=1) if the machine has no /dev/dri.
@@ -86,10 +92,12 @@ services:
     command: >
       ros2 launch auv_worlds competition.launch.py
         simulator_bridge:=true
+        config:=/etc/niot/competition_config.yaml
         gui:=${SIM_GUI:-true}
         seed:=${SIM_SEED:-auto}
         scoring:=${SIM_SCORING:-true}
         teleop:=${SIM_TELEOP:-false}
+        lifecycle:=${SIM_LIFECYCLE:-true}
 
   # Reuses the simulator image rather than building a third one: bridging
   # auv_msgs topics needs auv_msgs on AMENT_PREFIX_PATH, and that image already

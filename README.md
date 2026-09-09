@@ -42,7 +42,29 @@ NIOT_comp/
 - Linux with X11 (for the Gazebo GUI; headless works anywhere)
 - Docker Engine and Docker Compose v2
 - ~25 GB disk for the images, 8 GB RAM
-- GPU optional — see `simulator/docker/PERFORMANCE.md`
+- NVIDIA GPU optional but strongly recommended — see below
+
+### GPU
+
+Gazebo renders the camera sensors on the GPU, so an NVIDIA card is worth a large
+share of the real-time factor. `run.sh` detects the NVIDIA Container Toolkit and
+enables the GPU automatically when it is present:
+
+```bash
+./run.sh gpu        # report what is in use, and how to fix it if not
+```
+
+If it reports the toolkit is missing, install it once:
+
+```bash
+sudo apt install nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+Without it the container falls back to software or integrated-GPU rendering and
+still works, just slower. Override the detection with `NIOT_GPU=0` or
+`NIOT_GPU=1` if you need to.
 
 ## Quick start
 
@@ -63,8 +85,9 @@ stops the log follower, not the stack. Use `./run.sh down` to actually stop.
 Useful knobs:
 
 ```bash
-SIM_GUI=false ./run.sh up      # headless, no X11 needed
-SIM_SEED=1234 ./run.sh up      # replay a specific course
+SIM_GUI=false ./run.sh up       # headless, no X11 needed
+SIM_SEED=1234 ./run.sh up       # replay a specific course
+SIM_LIFECYCLE=false ./run.sh up # no run manager: thrusters live from boot, as before
 ```
 
 **Expect a real-time factor around 0.5** on a mid-range laptop. The camera
@@ -82,17 +105,93 @@ Your container is on `ROS_DOMAIN_ID=1`, so `ros2 topic list` shows only these.
 | `/localization/pose` | `auv_msgs/msg/AuvState` |
 | `/front_camera/image_raw` | `sensor_msgs/msg/Image` |
 | `/bottom_camera/image_raw` | `sensor_msgs/msg/Image` |
-| `/front_camera/oakd_frame` | `auv_msgs/msg/StereoVisionFrame` |
-| `/front_camera/rgbd_frame` | `auv_msgs/msg/RGBDFrame` |
+| `/front_camera/rgbd_frame` | `auv_msgs/msg/RGBDFrame` (RGB + depth) |
+| `/simulator/run_state` | `auv_msgs/msg/RunState` (see [The run](#the-run)) |
 
-**The one output that reaches the vehicle:**
+**What you can send back:**
 
-| Topic | Type |
-|---|---|
-| `/controller/thruster_forces` | `auv_msgs/msg/ThrusterForces` |
+| Topic | Type | |
+|---|---|---|
+| `/controller/thruster_forces` | `auv_msgs/msg/ThrusterForces` | the only thing that actuates the vehicle |
+| `/simulator/run_control` | `std_msgs/msg/String` | `start`, `end` or `reset` |
 
 Publishing anything else has no effect on the simulation. The whitelist is
 `simulator/docker/domain_bridge.yaml`.
+
+## The run
+
+A run is armed, not free-running. **The thrusters are dead until the run
+starts**, so publishing thrust before that moves nothing. That is deliberate:
+otherwise the clock effectively starts when Gazebo does and a controller that
+takes fifteen seconds to boot is penalised for its own startup.
+
+From your container, one word on a topic:
+
+```bash
+ros2 topic pub --once /simulator/run_control std_msgs/msg/String "data: start"
+ros2 topic pub --once /simulator/run_control std_msgs/msg/String "data: end"
+ros2 topic pub --once /simulator/run_control std_msgs/msg/String "data: reset"
+ros2 topic echo /simulator/run_state
+```
+
+`domain_bridge` carries topics and not services, which is why these are strings
+on a topic rather than service calls. In the simulator container the same three
+are `std_srvs/srv/Trigger` services — `/simulator/start_run`,
+`/simulator/end_run`, `/simulator/reset_run` — and they report back in their
+response, so that is the side to drive them from when you are debugging.
+
+`/simulator/run_state` publishes at 5 Hz throughout:
+
+| Field | |
+|---|---|
+| `state`, `state_label` | `IDLE` → `RUNNING` → `FINISHED` |
+| `elapsed`, `remaining`, `time_limit` | seconds of simulated time |
+| `score` | your live total, time bonus included once it is paid |
+| `gate_complete`, `slalom_complete` | whether you have run each task at all |
+| `run_index`, `run_id` | which run and which course layout |
+
+### Ending early is worth points
+
+The time you do not use pays **100 points per minute**, out of a **20 minute**
+limit. Both numbers live under `run:` in
+`simulator/auv_worlds/config/competition_config.yaml`, which is bind-mounted
+into the simulator, so changing the limit between runs is an edit and a restart
+rather than a rebuild:
+
+```bash
+$EDITOR simulator/auv_worlds/config/competition_config.yaml   # run.time_limit
+docker compose restart sim
+```
+
+The bonus is only paid if the vehicle has actually **run the gate and the
+slalom** — through the gate, and through all three slalom layers. Whether those
+passes scored does not matter: a slalom layer taken on a non-scoring side still
+counts as having attempted the task. Without that condition, starting a run and
+immediately ending it would be the highest-scoring strategy in the competition.
+
+Every task pays **once per thing done**: the gate once (either half, 50), each
+slalom layer once (100), each bin once (500), each torpedo hole once (500) and
+each octagon object once (1000). The marker and the torpedo reload on a button
+press, so scoring per drop or per shot would make a single bin an unlimited
+supply of points.
+
+Reaching the time limit ends the run exactly as `end` does, except that there is
+no time left to pay for. Either way the scorecard is written to
+`.docker-runs/result_<run_id>_run<n>.json`.
+
+### Practising
+
+`reset` re-poses the vehicle and re-seeds the course **without restarting
+Gazebo** — a couple of seconds instead of a 15-20 s boot, which is the
+difference between forty attempts in an evening and ten. It clears the score and
+leaves you in `IDLE`, ready for another `start`.
+
+Two things it cannot undo, both physical: a marker that has already been dropped
+stays on the pool floor, and a grasped pickup stays grasped — those are welds
+that only a relaunch remakes, so a reset run cannot score the bins again. And
+while the run is `IDLE` the vehicle is unpowered, so it drifts up toward the
+surface; `start` promptly after a `reset` if you want to begin from the spawn
+depth.
 
 ## Units — read this before writing any control code
 

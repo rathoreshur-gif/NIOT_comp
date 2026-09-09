@@ -1,0 +1,56 @@
+<sdf version='1.9'>
+  <model name='payload_marker'>
+    <!--
+      The dropper's payload. Placed in the generated world at the vehicle's
+      sampled pose plus its mount offset (see world_generator._payload_poses),
+      because the DetachableJoint in the AUV welds child to parent wherever it
+      finds them at world load.
+
+      The mesh is authored around a point 1.6 m from its own origin, so the
+      collision and visual carry the negation of the mesh centre - that is what
+      puts the marker at the model origin, and therefore exactly on the mount
+      offset the AUV asks for. That centre scales with the mesh, so each pose
+      is scaled by ITS OWN mesh's factor - the visual is drawn at 3x and carries
+      3x the negation, the collision stays at 1x and keeps the 1x one. The two
+      are meant to differ; making them equal puts the picture and the physics in
+      two different places.
+
+      Big to look at, normal to the physics: only the visual is scaled. Mass,
+      buoyancy volume and every contact come off the collision, so the marker
+      falls and lands in a bin exactly as it always did.
+    -->
+    <link name='payload_link'>
+      <inertial>
+        <mass>0.001</mass>
+        <inertia><ixx>0.0001</ixx><ixy>0</ixy><ixz>0</ixz><iyy>0.0001</iyy><iyz>0</iyz><izz>0.0001</izz></inertia>
+      </inertial>
+      <collision name='payload_collision'>
+        <pose>-0.6538 1.2814 -0.8547 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://marker/meshes/base_link.STL</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='payload_visual'>
+        <pose>-1.9614 3.8442 -2.5641 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://marker/meshes/base_link.STL</uri>
+            <scale>3 3 3</scale>
+          </mesh>
+        </geometry>
+        <!-- Orange, matching the torpedo. Ambient and emissive carry it: the
+             pool light is dim and blue-green, and a marker shaded on diffuse
+             alone reads brown by the time it reaches the bins on the floor. -->
+        <material>
+          <ambient>1.0 0.35 0.02 1</ambient>
+          <diffuse>1.0 0.45 0.05 1</diffuse>
+          <specular>0.3 0.15 0.05 1</specular>
+          <emissive>0.25 0.08 0.0 1</emissive>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

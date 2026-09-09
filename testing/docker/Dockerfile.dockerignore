@@ -1,0 +1,8 @@
+# The build context is the repository root (docker-compose.test.yml sets
+# `context: .`), but this image contains no repository sources at all — only
+# the three scripts under testing/docker. Everything else is noise that would
+# invalidate the image cache on every unrelated edit.
+*
+!testing/docker/entrypoint.sh
+!testing/docker/build_ws.sh
+!testing/docker/start_sim.sh

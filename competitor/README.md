@@ -26,14 +26,40 @@ Available in this container:
 | `/localization/pose` | `auv_msgs/msg/AuvState` |
 | `/front_camera/image_raw` | `sensor_msgs/msg/Image` |
 | `/bottom_camera/image_raw` | `sensor_msgs/msg/Image` |
-| `/front_camera/oakd_frame` | `auv_msgs/msg/StereoVisionFrame` |
-| `/front_camera/rgbd_frame` | `auv_msgs/msg/RGBDFrame` |
+| `/front_camera/rgbd_frame` | `auv_msgs/msg/RGBDFrame` (RGB + depth) |
+| `/simulator/run_state` | `auv_msgs/msg/RunState` |
 
-The one topic that reaches the vehicle:
+`/front_camera/oakd_frame` (`StereoVisionFrame`) is **not** available. It carried
+the same RGB and depth pair as `RGBDFrame`, built in the same callback, and cost
+a per-pixel Python conversion to produce. Use `rgbd_frame` for depth.
 
-| Topic | Type |
-|---|---|
-| `/controller/thruster_forces` | `auv_msgs/msg/ThrusterForces` |
+What you can send back:
+
+| Topic | Type | |
+|---|---|---|
+| `/controller/thruster_forces` | `auv_msgs/msg/ThrusterForces` | the only thing that actuates the vehicle |
+| `/simulator/run_control` | `std_msgs/msg/String` | `start`, `end` or `reset` |
+
+## Starting and ending your run
+
+**The thrusters are dead until you start the run.** Publishing thrust before
+that moves nothing, which is deliberate — the clock would otherwise start when
+Gazebo does, and you would be paying for your own boot time.
+
+```bash
+ros2 topic pub --once /simulator/run_control std_msgs/msg/String "data: start"
+ros2 topic echo /simulator/run_state          # IDLE -> RUNNING -> FINISHED
+ros2 topic pub --once /simulator/run_control std_msgs/msg/String "data: end"
+```
+
+`end` pays 100 points for every minute left of the 20-minute limit, but only if
+you have been through the gate and all three slalom layers — passing on the
+non-scoring side still counts as having run the task. `reset` puts a fresh
+course and the vehicle back without restarting Gazebo, and clears the score.
+
+These are `std_srvs/srv/Trigger` services on the simulator side; they are
+strings on a topic here because the domain bridge carries topics, not services.
+The full rules are in the root [README](../README.md#the-run).
 
 Publishing anything else has no effect on the simulation. The whitelist lives in
 `../Matsya_ROS2_Simulator/docker/domain_bridge.yaml`.

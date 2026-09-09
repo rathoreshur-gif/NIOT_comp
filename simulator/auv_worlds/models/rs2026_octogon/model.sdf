@@ -46,6 +46,41 @@
         </geometry>
       </collision>
 
+      <!-- The two side pads, as BOXES rather than left to the mesh above.
+           Task 5 delivery needs something solid to put an object down on, and
+           the mesh collision does not provide it: an object teleported onto a
+           pad falls straight through and settles ~0.085 m lower, while one on
+           the mid table rests exactly where it should (measured: a 0.05 m
+           pickup sits at local z 0.075 over a table top of 0.050). So the
+           table's own submesh collides and the two boards do not - the glb has
+           three submeshes and only the first is picked up as collision.
+
+           Bounds are the boards' own, measured off ocatgon_table.glb in this
+           frame and matching tasks.octagon.scoring.pads in
+           competition_config.yaml, which is what the flagger tests against:
+
+             Cube.005  x [-0.270, +0.270]  y [+0.590, +0.956]  z [-0.056, +0.049]
+             Cube.006  x [-0.270, +0.270]  y [-0.953, -0.587]  z [-0.056, +0.049]
+
+           Boxes and not <submesh> because a box is exactly what these are, and
+           because gz's own guidance is to keep collisions primitive - a thin
+           plate as a trimesh is also where box-vs-mesh contact chatters.
+           If the bounds here and the pads in the config ever disagree, an
+           object will rest on a surface the flagger is not watching. -->
+      <collision name='pad_port_collision'>
+        <pose>0 0.773 -0.0035 0 0 0</pose>
+        <geometry>
+          <box><size>0.540 0.366 0.105</size></box>
+        </geometry>
+      </collision>
+
+      <collision name='pad_starboard_collision'>
+        <pose>0 -0.770 -0.0035 0 0 0</pose>
+        <geometry>
+          <box><size>0.540 0.366 0.105</size></box>
+        </geometry>
+      </collision>
+
       <visual name='base_link_visual'>
         <pose>0 0 0 1.570796 0 0</pose>
         <geometry>

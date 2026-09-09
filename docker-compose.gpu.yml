@@ -1,0 +1,30 @@
+# NVIDIA GPU overlay for the simulator.
+#
+# Gazebo renders the camera sensors on the GPU, so without this the container
+# falls back to the integrated GPU and the real-time factor drops sharply even
+# on a machine with a discrete card.
+#
+# NOT merged by default, and that is deliberate: `runtime: nvidia` makes the
+# container fail to start outright on a machine without the NVIDIA Container
+# Toolkit, which is most competitors. ./run.sh adds this file only when the
+# toolkit is actually installed.
+#
+#   ./run.sh up               # auto-detects, uses the GPU when available
+#   NIOT_GPU=0 ./run.sh up    # force off
+#   NIOT_GPU=1 ./run.sh up    # force on (fails loudly if the toolkit is absent)
+#
+# Manually, without run.sh:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# Requires, once per machine:
+#
+#   sudo apt install nvidia-container-toolkit
+#   sudo nvidia-ctk runtime configure --runtime=docker
+#   sudo systemctl restart docker
+#
+# The NVIDIA_VISIBLE_DEVICES / NVIDIA_DRIVER_CAPABILITIES variables the runtime
+# reads are already set in docker-compose.yml, where they are inert without it.
+services:
+  sim:
+    runtime: nvidia

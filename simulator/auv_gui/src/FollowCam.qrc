@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/FollowCam">
+    <file>FollowCam.qml</file>
+  </qresource>
+</RCC>

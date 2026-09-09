@@ -22,6 +22,7 @@ import signal
 import yaml
 import os
 import threading
+import traceback
 import cv2
 from functools import partial
 
@@ -39,6 +40,53 @@ FINGER_RETRACT_TIME     = 0.6
 # fingers squeezing at GRIPPER_CLOSE_ANGLE is what settles the prop into the jaw -
 # weld on first touch instead and you capture whatever glancing pose that frame had.
 GRASP_DWELL_TIME        = 1.0
+
+# --- torpedoes -------------------------------------------------------------
+# A fired torpedo is a released DetachableJoint, so it leaves with no speed of
+# its own and would simply hang there. ApplyLinkWrench applies a wrench for
+# exactly ONE physics step, so the impulse delivered is force x step.
+#
+# With the torpedo neutrally buoyant, distance is impulse/drag and the mass
+# cancels out of m*v0/c entirely - so the range below is a real distance in
+# metres, not a number to tune by eye. TORPEDO_DRAG must stay equal to the
+# <xU> in payload_torpedo/model.sdf, which is the model that is actually fired.
+TORPEDO_RANGE_M         = 3.0
+TORPEDO_DRAG            = 0.0446   # N.s/m, matches the model's <xU>
+PHYSICS_STEP            = 0.002    # s, matches robosub.sdf max_step_size
+# The detach has to cross the parameter_bridge into Gazebo before the impulse
+# lands. A wrench applied while the torpedo is still welded shoves the whole
+# vehicle instead, which looks like the AUV kicking itself sideways.
+TORPEDO_FIRE_DELAY      = 0.1      # s
+
+# --- reloading a payload ---------------------------------------------------
+# The vehicle carries ONE marker and ONE torpedo, and pressing the same button
+# again puts it back. A DetachableJoint's attach topic re-welds the child at
+# whatever relative pose it happens to find, so a reload is really two steps:
+# teleport the payload back into its cradle, then re-weld.
+#
+# The teleport is the reason both payloads are TOP-LEVEL models rather than
+# models nested in the AUV: Gazebo answers set_pose on a nested model with
+# "Unable to set world pose for nested models" and does nothing, so a nested
+# payload could be released but never put back.
+#
+# These offsets are vehicle.payloads[].pose in competition_config.yaml, which is
+# where the payloads are spawned from; the two have to stay equal.
+PAYLOAD_MOUNTS = {
+    'marker_left':  ((0.00, 0.0, -0.10), (0.0, 0.0, 0.0)),
+    # Roll pi stands the torpedo the right way up - its mesh is authored nose
+    # -down - and the yaw pi points it forward. Rolling about X spins it about
+    # its own length, so the nose still faces the way the firing impulse is
+    # applied. Equal to vehicle.payloads[torpedo_left].pose in
+    # competition_config.yaml, and it has to stay equal: this is the pose a
+    # RELOAD teleports it back to, so a mismatch means the torpedo comes back
+    # from a reload in a different attitude than it spawned in.
+    'torpedo_left': ((0.35, 0.0,  0.00), (3.14159, 0.0, 3.14159)),
+}
+# Gazebo's set_pose moves a body on the next physics step, so the weld cannot
+# be requested in the same breath - it would catch the payload still out where
+# it landed and bolt it there. One tenth of a second is fifty physics steps.
+PAYLOAD_RELOAD_DELAY    = 0.1      # s
+GZ_WORLD                = 'underwater_pool'
 # gz contact sensors publish only while a collision is live; they go silent on release
 # rather than sending an empty Contacts. Nothing therefore tells us contact ended, so
 # a finger counts as clear once its last message is this old. Without this the touch
@@ -65,8 +113,24 @@ class SimulatorBridge(Node):
         self.front_camera_group = MutuallyExclusiveCallbackGroup()
         self.front_depth_group = MutuallyExclusiveCallbackGroup()
         self.bottom_camera_group = MutuallyExclusiveCallbackGroup()
-        self.thrusters_killed = False
+        # Dead until something unkills them, which for a competition run is
+        # /simulator/start_run. Otherwise the run clock effectively starts when
+        # Gazebo does and a controller that takes fifteen seconds to boot is
+        # penalised for its own startup. Default false so the bridge run on its
+        # own behaves as it always has; competition.launch.py turns it on along
+        # with the rest of the run lifecycle.
+        self.declare_parameter('start_disarmed', False)
+        self.thrusters_killed = bool(self.get_parameter('start_disarmed').value)
         self.declare_parameter('legacy_keyboard', False)
+
+        # /front_camera/oakd_frame is off by default. Building a StereoVisionFrame
+        # costs a per-pixel Python list conversion (`.tolist()` over the whole
+        # depth image, ~280k elements at camera rate), and the frame carries the
+        # same information as the RGBDFrame published from the same callback.
+        # The competition whitelist forwards rgbd_frame, not oakd_frame, so this
+        # work had no consumer. Set true if you need the legacy message.
+        self.declare_parameter('publish_stereo_frame', False)
+        self.publish_stereo_frame = self.get_parameter('publish_stereo_frame').value
 
         # Threading lock for shared image state
         self.front_image_lock = threading.Lock()
@@ -75,7 +139,9 @@ class SimulatorBridge(Node):
         # Publishers
         self.localisation_pub = self.create_publisher(AuvState, '/localization/pose', 10)
         self.front_image_pub = self.create_publisher(Image, '/front_camera/image_raw', 10)
-        self.front_image_depth_pub = self.create_publisher(StereoVisionFrame, '/front_camera/oakd_frame', 10)
+        self.front_image_depth_pub = (
+            self.create_publisher(StereoVisionFrame, '/front_camera/oakd_frame', 10)
+            if self.publish_stereo_frame else None)
         self.bottom_image_pub = self.create_publisher(Image, '/bottom_camera/image_raw', 10)
         self.payload_wrench_pub = self.create_publisher(EntityWrench, '/world/underwater_pool/wrench', 10)
         self.rgbd_pub = self.create_publisher(RGBDFrame, '/front_camera/rgbd_frame', 10)
@@ -96,6 +162,12 @@ class SimulatorBridge(Node):
         self.localisation_reset_service = self.create_service(Empty, '/localization/reset_service', self.localisation_reset_callback)
         self.start_logging_srv = self.create_service(Empty, '/simulator/start_logging', self.handle_start_logging, callback_group=self.logging_group)
         self.stop_logging_srv = self.create_service(Empty, '/simulator/stop_logging', self.handle_stop_logging, callback_group=self.logging_group)
+
+        if self.thrusters_killed:
+            self.get_logger().warn(
+                'Thrusters start DISARMED: /controller/thruster_forces is dropped until '
+                '/simulator/start_run (or /simulator/unkill_thrusters) is called. '
+                'A controller publishing now will look alive and move nothing.')
 
         # Subscribers
         self.simulator_imu1_sub = self.create_subscription(Imu, '/model/auv/imu_1', self.imu1_callback, 10)
@@ -196,20 +268,41 @@ class SimulatorBridge(Node):
         self.right_finger_pub = self.create_publisher(
             Float64, '/model/m7urdfnew_sdf_package/joint/right_finger_joint/cmd_pos', 10) 
 
-        # Marker droppers. The DetachableJoint plugins for both markers live in
-        # the AUV model and auto-attach at world load, so a marker rides along
-        # until its detach topic is poked.
-        self.marker_drop_pubs = {
-            'left': self.create_publisher(EmptyMsg, '/model/auv/marker_left/drop', 10),
-            'right': self.create_publisher(EmptyMsg, '/model/auv/marker_right/drop', 10),
-        }
+        # Marker dropper. The DetachableJoint plugin lives in the AUV model and
+        # auto-attaches at world load, so the marker rides along until its
+        # detach topic is poked. Poking the service again reloads it - see
+        # handle_drop_marker.
+        self.marker_drop_pub = self.create_publisher(
+            EmptyMsg, '/model/auv/marker_left/drop', 10)
+        self.marker_reload_pub = self.create_publisher(
+            EmptyMsg, '/model/auv/marker_left/reload', 10)
         self.markers_dropped = set()
         self.drop_left_srv = self.create_service(
             Empty, '/simulator/drop_marker_left',
-            lambda req, res: self.handle_drop_marker('left', res))
-        self.drop_right_srv = self.create_service(
-            Empty, '/simulator/drop_marker_right',
-            lambda req, res: self.handle_drop_marker('right', res))
+            lambda req, res: self._guard(self.handle_drop_marker, res))
+
+        # Torpedo. Same DetachableJoint idiom as the marker above, plus an
+        # impulse - a torpedo that is only released has no way to reach the
+        # board. Aimed here rather than by the caller because this node already
+        # tracks the vehicle's heading, so firing needs no arguments.
+        self.torpedo_fire_pub = self.create_publisher(
+            EmptyMsg, '/model/auv/torpedo_left/fire', 10)
+        self.torpedo_reload_pub = self.create_publisher(
+            EmptyMsg, '/model/auv/torpedo_left/reload', 10)
+        self.torpedoes_fired = set()
+        self.fire_left_srv = self.create_service(
+            Empty, '/simulator/fire_torpedo_left',
+            lambda req, res: self._guard(self.handle_fire_torpedo, res))
+
+        # What has just been put back on the hull. The flaggers hold "this one
+        # has already scored" state keyed on the payload's name, and a reloaded
+        # payload is a new shot that has to be allowed to score again.
+        self.payload_reload_pub = self.create_publisher(
+            String, '/scoring/payload_reloaded', 10)
+        # Latest Gazebo-frame vehicle pose, which is what a payload's mount
+        # offset has to be composed against to get a world pose for set_pose.
+        # None until the first odometry message.
+        self.gz_auv_pose = None
 
         # Gripper actuation services
         self.close_gripper_srv = self.create_service(
@@ -337,9 +430,6 @@ class SimulatorBridge(Node):
                 return
             current_front_image = self.front_image.copy()
 
-        self.stereo_frame = StereoVisionFrame()
-        self.stereo_frame.camera_frame = self.bridge.cv2_to_imgmsg(current_front_image, encoding='rgb8')
-
         # 1. Pull raw simulation depth array from Gazebo
         depth_array = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
 
@@ -351,14 +441,20 @@ class SimulatorBridge(Node):
             interpolation=cv2.INTER_NEAREST
         )
 
-        # 3. Process the distorted depth map into your standard message format
-        depth_mm = distorted_depth.astype(np.float32) * 1000.0
-        depth_clipped = np.clip(depth_mm, 0, 32767).astype(np.int16)
-        self.stereo_frame.depth_frame = depth_clipped.flatten().tolist()
+        # 3. The legacy StereoVisionFrame, only when asked for. The flatten/tolist
+        # below is the single most expensive operation in this callback: it walks
+        # every depth pixel in Python. Skipping it is most of the reason this
+        # parameter exists.
+        if self.publish_stereo_frame:
+            self.stereo_frame = StereoVisionFrame()
+            self.stereo_frame.camera_frame = self.bridge.cv2_to_imgmsg(
+                current_front_image, encoding='rgb8')
+            depth_mm = distorted_depth.astype(np.float32) * 1000.0
+            depth_clipped = np.clip(depth_mm, 0, 32767).astype(np.int16)
+            self.stereo_frame.depth_frame = depth_clipped.flatten().tolist()
+            self.front_image_depth_pub.publish(self.stereo_frame)
 
-        self.front_image_depth_pub.publish(self.stereo_frame)
-
-        # --- NEW: combined RGBDFrame publishing ---
+        # --- combined RGBDFrame publishing: this is what the competitor sees ---
         rgbd_frame = RGBDFrame()
         rgbd_frame.header = msg.header
 
@@ -505,8 +601,22 @@ class SimulatorBridge(Node):
         self.heave_back_left_pub.publish(Float64(data=world_up))
         self.heave_back_right_pub.publish(Float64(data=world_up))
 
+    def publish_zero_thrust(self):
+        """ Stops the vehicle, rather than only stopping the commands.
+
+        Gazebo holds the last thrust it was handed, so a kill that merely drops
+        incoming messages leaves the AUV coasting on whatever it was last told to
+        do - which at the end of a run is usually full ahead.
+        """
+        for pub in (self.surge_front_left_pub, self.surge_front_right_pub,
+                    self.surge_back_left_pub,  self.surge_back_right_pub,
+                    self.heave_front_left_pub, self.heave_front_right_pub,
+                    self.heave_back_left_pub,  self.heave_back_right_pub):
+            pub.publish(Float64(data=0.0))
+
     def handle_kill_thrusters(self, request, response):
         self.thrusters_killed = True
+        self.publish_zero_thrust()
         self.get_logger().info('Thrusters killed.')
         return response
 
@@ -520,7 +630,7 @@ class SimulatorBridge(Node):
 
     def apply_payload_wrench(self, payload_name, force_xyz):
         wrench_msg = EntityWrench()
-        wrench_msg.entity.name = f'auv::{payload_name}::{payload_name}_link'
+        wrench_msg.entity.name = f'{payload_name}::payload_link'
         wrench_msg.entity.type = Entity.LINK
         wrench_msg.wrench.force.x = force_xyz[0]
         wrench_msg.wrench.force.y = force_xyz[1]
@@ -625,6 +735,11 @@ class SimulatorBridge(Node):
             pose.orientation.z,
             pose.orientation.w,
         ])
+        # Gazebo's own frame, not the AuvState convention above: this is what a
+        # payload's mount offset gets composed against when reloading.
+        self.gz_auv_pose = (
+            np.array([pose.position.x, pose.position.y, pose.position.z]), rotation)
+
         velocities = rotation.apply([
             twist.linear.x,
             twist.linear.y,
@@ -860,15 +975,142 @@ class SimulatorBridge(Node):
             # whatever the touch sets hold now describes a grasp that no longer exists.
             self.reset_grasp_tracking()
 
-    def handle_drop_marker(self, side, response):
-        """Release one marker. Each dropper fires once, like the real vehicle."""
-        if side in self.markers_dropped:
-            self.get_logger().warn(f'Marker {side} has already been dropped.')
+    def _guard(self, handler, response):
+        """Run a payload handler without letting it take the whole node down.
+
+        An exception out of a service callback propagates through the executor
+        and kills simulator_bridge - and simulator_bridge is what carries thrust
+        into Gazebo, so one bad button press leaves the vehicle dead in the
+        water with nothing on screen to say why. At an outreach stand that is
+        the worst failure there is, so a broken payload button stays a broken
+        payload button.
+        """
+        try:
+            return handler(response)
+        except Exception:
+            self.get_logger().error(
+                f'{handler.__name__} failed:\n{traceback.format_exc()}')
             return response
-        self.markers_dropped.add(side)
-        self.marker_drop_pubs[side].publish(EmptyMsg())
-        self.get_logger().info(f'Dropped marker {side}.')
+
+    def handle_drop_marker(self, response):
+        """Drop the marker, or put it back if it is already gone.
+
+        The vehicle carries one. Calling this again after a drop reloads it
+        rather than refusing, so at an outreach stand a child can keep playing
+        without anyone restarting Gazebo.
+        """
+        if 'marker_left' in self.markers_dropped:
+            self._reload_payload('marker_left', self.marker_reload_pub)
+            self.markers_dropped.discard('marker_left')
+            return response
+        self.markers_dropped.add('marker_left')
+        self.marker_drop_pub.publish(EmptyMsg())
+        self.get_logger().info('Dropped the marker.')
         return response
+
+    def handle_fire_torpedo(self, response):
+        """Fire the torpedo, or reload it if it has already gone.
+
+        Same one-aboard-plus-reload rule as the marker above; the difference is
+        the impulse, without which a released torpedo would just hang there.
+        """
+        if 'torpedo_left' in self.torpedoes_fired:
+            self._reload_payload('torpedo_left', self.torpedo_reload_pub)
+            self.torpedoes_fired.discard('torpedo_left')
+            return response
+        self.torpedoes_fired.add('torpedo_left')
+        self.torpedo_fire_pub.publish(EmptyMsg())
+
+        force = TORPEDO_RANGE_M * TORPEDO_DRAG / PHYSICS_STEP
+        self._impulse_after_detach('torpedo_left', force)
+        self.get_logger().info(
+            f'Fired the torpedo: {force:.0f} N for one step '
+            f'-> about {TORPEDO_RANGE_M:.1f} m.')
+        return response
+
+    def _reload_payload(self, name, attach_pub):
+        """Teleport `name` back into its cradle on the hull, then re-weld it.
+
+        Two steps, because a DetachableJoint's attach welds the child wherever
+        it finds it: re-welding a torpedo that is lying three metres downrange
+        would bolt it three metres in front of the nose. So set_pose first, give
+        Gazebo PAYLOAD_RELOAD_DELAY to actually move it, then attach.
+
+        Nothing detaches here: this only ever runs on a payload that is already
+        loose, and a detach would race the teleport across the parameter bridge.
+        A welded payload and its vehicle are one body to the physics engine, so
+        teleporting one half of the pair would fight the joint.
+
+        On a thread because set_pose is a Gazebo Transport service, which is not
+        on the ROS graph and so goes out through the `gz` CLI - the same way the
+        log recorder above does, and half a second of process startup either
+        way. The button press should not wait for that.
+        """
+        if self.gz_auv_pose is None:
+            self.get_logger().warn(
+                f'No odometry yet, so there is no way to work out where {name} '
+                'should go; not reloading.')
+            return
+
+        offset, rpy = PAYLOAD_MOUNTS[name]
+        auv_xyz, auv_rot = self.gz_auv_pose
+        xyz = auv_xyz + auv_rot.apply(offset)
+        qx, qy, qz, qw = (auv_rot * R.from_euler('xyz', rpy)).as_quat()
+        request = (f'name: "{name}" '
+                   f'position {{x: {xyz[0]:.6f} y: {xyz[1]:.6f} z: {xyz[2]:.6f}}} '
+                   f'orientation {{x: {qx:.9f} y: {qy:.9f} z: {qz:.9f} w: {qw:.9f}}}')
+        command = [
+            'gz', 'service', '-s', f'/world/{GZ_WORLD}/set_pose',
+            '--reqtype', 'gz.msgs.Pose', '--reptype', 'gz.msgs.Boolean',
+            '--timeout', '2000', '--req', request,
+        ]
+
+        def run():
+            import time
+            try:
+                result = subprocess.run(command, capture_output=True, text=True,
+                                        timeout=8.0)
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                self.get_logger().error(f'Could not teleport {name} back: {exc}')
+                return
+            if result.returncode != 0 or 'true' not in result.stdout:
+                self.get_logger().error(
+                    f'Gazebo refused to move {name} back: '
+                    f'{(result.stdout + result.stderr).strip() or "no output"}')
+                return
+
+            time.sleep(PAYLOAD_RELOAD_DELAY)
+            attach_pub.publish(EmptyMsg())
+            # Tell the flaggers this is a fresh one. They latch "already scored"
+            # on the payload's name, which is the only thing that would stop a
+            # reloaded payload from scoring a second time.
+            self.payload_reload_pub.publish(String(data=name))
+            self.get_logger().info(f'Reloaded {name}.')
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def _impulse_after_detach(self, payload_name, force_n):
+        """Apply a forward impulse to `payload_name`, once, after a short delay.
+
+        rclpy has no one-shot timer, so the callback cancels the timer that
+        called it. The handle lives in a dict the closure shares, which is
+        filled in before the executor can run the callback - a plain local
+        would still be unbound on the first fire and the impulse would then
+        repeat forever.
+        """
+        holder = {}
+
+        def shoot():
+            timer = holder.get('timer')
+            if timer is not None:
+                timer.cancel()
+                self.destroy_timer(timer)
+            # Read the heading now, not when the trigger was pulled: the delay
+            # is long enough for a turning vehicle to have moved on.
+            self.apply_payload_wrench(
+                payload_name, self.forward_payload_force(force_n))
+
+        holder['timer'] = self.create_timer(TORPEDO_FIRE_DELAY, shoot)
 
     def handle_close_gripper(self, request, response):
         """ Closes both fingers to GRIPPER_CLOSE_ANGLE and arms grasping """

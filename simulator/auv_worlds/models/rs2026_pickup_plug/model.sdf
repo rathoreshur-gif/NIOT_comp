@@ -61,5 +61,20 @@
       <mQabsQ>-0.003</mQabsQ>
       <nRabsR>-0.003</nRabsR>
     </plugin>
+
+    <!-- The prop's world pose, for octagon_flagger's delivery test. Odometry
+         rather than PosePublisher for the same reason payload_torpedo uses it:
+         PosePublisher reports a link's pose relative to the model containing
+         it, which for a one-link model is a constant zero. The twist matters
+         here too - "delivered" means come to REST on a pad, and the flagger
+         reads the speed off this message. -->
+    <plugin filename="ignition-gazebo-odometry-publisher-system"
+            name="ignition::gazebo::systems::OdometryPublisher">
+      <odom_frame>world</odom_frame>
+      <robot_base_frame>pickup_link</robot_base_frame>
+      <dimensions>3</dimensions>
+      <odom_publish_frequency>30</odom_publish_frequency>
+      <publish_tf>false</publish_tf>
+    </plugin>
   </model>
 </sdf>

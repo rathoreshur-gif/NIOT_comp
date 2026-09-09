@@ -1,0 +1,18 @@
+#!/usr/bin/python3
+"""Console-script wrapper for the torpedo flagger.
+
+Deliberately a direct import rather than the setuptools `load_entry_point`
+stub the other flaggers use. That stub reads the installed distribution's
+entry-point metadata, which is baked into the sim image at build time - so a
+new executable cannot appear just by mounting the source over it. This does the
+same job with no metadata lookup, which is what lets the demo overlay add a
+flagger without rebuilding the 7 GB image.
+
+Rebuild the image and setup.py's console_scripts entry supersedes this.
+"""
+import sys
+
+from auv_scoring.torpedo_flagger import main
+
+if __name__ == '__main__':
+    sys.exit(main())

@@ -36,15 +36,18 @@ class SlalomFlagger(Node):
         self.declare_parameter('odometry_topic', '/model/auv/odometry')
 
         self.task = self.get_parameter('task').value
-        geometry = self._load_geometry(self.get_parameter('config_file').value)
+        # Kept, not just used: a reset re-seeds the course and the layers have
+        # to be rebuilt against the same geometry with new poses.
+        self.geometry = self._load_geometry(self.get_parameter('config_file').value)
         self.layers = self._build_layers(
-            self.get_parameter('ground_truth_file').value, geometry)
+            self.get_parameter('ground_truth_file').value, self.geometry)
 
         self.slalom_pub = self.create_publisher(String, '/scoring/slalom', 10)
         self.event_pub = self.create_publisher(String, '/scoring/events', 10)
         self.create_subscription(
             Odometry, self.get_parameter('odometry_topic').value,
             self.odometry_callback, 10)
+        self.create_subscription(String, '/scoring/course', self.course_callback, 10)
 
         self.get_logger().info(
             f'Slalom flagger watching {len(self.layers)} layers '
@@ -85,6 +88,26 @@ class SlalomFlagger(Node):
                 name, xyz, rot, geometry['opening_y'], geometry['opening_z'],
                 geometry.get('divider_y', 0.0), start))
         return layers
+
+    def course_callback(self, msg):
+        """Rebuild the layers for a re-seeded course.
+
+        reset_run moves the poles without restarting Gazebo, so both the planes
+        and the crossing detectors' latched state are stale the moment it
+        returns.
+        """
+        path = msg.data.strip()
+        try:
+            layers = self._build_layers(path, self.geometry)
+        except (OSError, ValueError, KeyError, RuntimeError) as exc:
+            self.get_logger().error(
+                f'Ignoring course update {path}: {exc}. Still scoring against the '
+                'pole poses this run started with.')
+            return
+
+        self.layers = layers
+        self.get_logger().info(
+            f'Course reloaded from {path}; {len(self.layers)} layers re-posed.')
 
     def odometry_callback(self, msg):
         p = msg.pose.pose.position

@@ -1,0 +1,139 @@
+# Gamepad demo overlay: drive the competition simulator by hand from a pad.
+#
+# For showing the simulator at an event. It changes nothing about the simulator
+# or the domain bridge - the vehicle is still driven only through
+# /controller/thruster_forces across the same whitelist a competitor gets. All
+# this does is give the competitor container a joystick and start the gamepad
+# node in place of basic_controller.
+#
+#   ./demo.sh up            # start the stack in gamepad mode
+#   ./demo.sh down          # stop it
+#
+# Or by hand, remembering that -f disables Compose's automatic override pickup:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d
+#
+# NOT merged by default, and deliberately so: `devices:` makes the container
+# fail to start outright when the pad is not plugged in, which would break the
+# ordinary competition path for everyone without one.
+services:
+  # Carries the run_manager fix into the simulator without a 20-minute rebuild
+  # of the 7 GB sim image. run_manager logged through a conditionally-chosen
+  # logger, which rclpy rejects the first time one call site changes severity;
+  # the node died on the first rejected run_control command and took
+  # /simulator/run_state with it. Rebuild the sim image when convenient and
+  # this mount becomes a no-op.
+  sim:
+    volumes:
+      - ./simulator/auv_scoring/auv_scoring:/ros2_ws/install/auv_scoring/lib/python3.12/site-packages/auv_scoring:ro
+
+      # simulator_bridge, which now carries the torpedo firing services. The
+      # impulse is applied here rather than from the competitor because
+      # ApplyLinkWrench's message type lives in ros_gz_interfaces, which the
+      # competitor image does not have and does not need.
+      - ./simulator/auv_simbridge/auv_simbridge:/ros2_ws/install/auv_simbridge/lib/python3.12/site-packages/auv_simbridge:ro
+
+      # The Scoreboard panel with the game timer and the RESET button. A C++
+      # gz-gui plugin, so unlike the Python above it cannot just be mounted as
+      # source - it is compiled inside the sim container (which already has the
+      # toolchain and every gz dependency) and the .so copied back out:
+      #
+      #   docker cp simulator/auv_gui/src niot-sim:/ros2_ws/src/auv_gui/
+      #   docker compose ... exec sim /entrypoint.sh \
+      #     bash -c 'cd /ros2_ws && colcon build --packages-select auv_gui'
+      #   docker cp niot-sim:/ros2_ws/install/auv_gui/lib/auv_gui/libScoreboard.so \
+      #     simulator/auv_gui/prebuilt/libScoreboard.so
+      #
+      # Nine seconds, against fifteen minutes to rebuild the 7 GB sim image.
+      # Rebuild the image when convenient and this mount becomes a no-op.
+      - ./simulator/auv_gui/prebuilt/libScoreboard.so:/ros2_ws/install/auv_gui/lib/auv_gui/libScoreboard.so:ro
+
+      # The chase camera panel, built the same way and for the same reason.
+      # New plugin, so unlike Scoreboard there is no file in the image to shadow
+      # - the mount is what puts it on GZ_GUI_PLUGIN_PATH at all.
+      - ./simulator/auv_gui/prebuilt/libFollowCam.so:/ros2_ws/install/auv_gui/lib/auv_gui/libFollowCam.so:ro
+
+      # The torpedo flagger's console-script wrapper. Mounting the Python
+      # package is not enough for a NEW node: ros2 launch resolves an
+      # executable in the package's libexec directory, and that is populated at
+      # image build time from setup.py.
+      - ./simulator/auv_scoring/prebuilt/torpedo_flagger:/ros2_ws/install/auv_scoring/lib/auv_scoring/torpedo_flagger:ro
+
+      # Same for the octagon flagger, which is newer still. Task 5's scoring
+      # node: watches the four pickups' odometry and pays when one is delivered
+      # onto a side pad.
+      - ./simulator/auv_scoring/prebuilt/octagon_flagger:/ros2_ws/install/auv_scoring/lib/auv_scoring/octagon_flagger:ro
+
+      # Carries the /gui/run_control -> /simulator/run_control bridge entry the
+      # RESET button needs. Baked into the image otherwise, so without this the
+      # button publishes to a topic nothing is listening on.
+      - ./simulator/auv_worlds/config/bridge_topics_thrusters.yaml:/ros2_ws/install/auv_worlds/share/auv_worlds/config/bridge_topics_thrusters.yaml:ro
+
+      # The rest of auv_worlds, for the torpedo work: the board's orientation
+      # fix and the scoring block live in models/ and config/, the torpedo's
+      # mass, drag and pose publishers in the AUV model, and the wrench system
+      # the firing impulse needs in worlds/robosub.sdf. All data files - no
+      # compile step - so mounting them is the whole update.
+      - ./simulator/auv_worlds/models:/ros2_ws/install/auv_worlds/share/auv_worlds/models:ro
+      - ./simulator/auv_worlds/worlds:/ros2_ws/install/auv_worlds/share/auv_worlds/worlds:ro
+      - ./simulator/auv_worlds/launch:/ros2_ws/install/auv_worlds/share/auv_worlds/launch:ro
+      # camera_director, which points the Gazebo camera at the vehicle. A plain
+      # script, so mounting it is the whole update.
+      - ./simulator/auv_worlds/scripts:/ros2_ws/install/auv_worlds/share/auv_worlds/scripts:ro
+      - ./simulator/auv_worlds/auv_worlds:/ros2_ws/install/auv_worlds/lib/python3.12/site-packages/auv_worlds:ro
+
+  competitor:
+    # DEMO ONLY: the same domain as the simulator, not the competitor's own.
+    #
+    # The competition path keeps this container on ROS_DOMAIN_ID=1 behind the
+    # domain bridge, which carries topics and not services - so a node there can
+    # publish thrust but cannot call /simulator/drop_marker_left or
+    # /simulator/close_gripper, which are plain ROS services on domain 0. The
+    # game needs those buttons, and the alternative is a topic whitelist plus a
+    # relay node on the far side to turn strings back into service calls.
+    #
+    # For an outreach demo that indirection buys nothing, so this joins domain 0
+    # and calls the services directly. It does mean this container no longer
+    # demonstrates a competitor's restricted view of the world - which is the
+    # whole point of the split - so nothing here should be read as an example of
+    # what a competition entry may do.
+    environment:
+      - ROS_DOMAIN_ID=0
+
+    # container_name is deliberately NOT overridden: same project, same service,
+    # same container as the competition path, so demo and competition mode
+    # replace each other instead of racing. Two containers both publishing
+    # /controller/thruster_forces would make the vehicle incoherent, and
+    # `./run.sh down` stops whichever one is up.
+
+    # The pad. A bind mount of the whole directory rather than `devices:` for
+    # one node, because a pad that is unplugged and plugged back in does not
+    # reliably return on the same number - the kernel hands out the lowest free
+    # js*, so js0 becomes js1 if anything claimed it meanwhile. `devices:` binds
+    # a major:minor at container start, so after that kind of re-enumeration the
+    # container is left holding a node that resolves to nothing and only a
+    # restart fixes it. The bind mount tracks the host's /dev/input live, and
+    # the node re-resolves the path on every reconnect attempt.
+    volumes:
+      - /dev/input:/dev/input:ro
+      # Live source, straight over the installed copy. The image is built with
+      # a plain `colcon build`, so install/ holds copies rather than symlinks
+      # and editing src/ alone would change nothing. With this, a tweak to the
+      # controller is `docker compose restart competitor` - a few seconds -
+      # instead of a rebuild. Demo only; the competition image is unaffected.
+      - ./competitor/competitor_controller/competitor_controller:/ros2_ws/install/competitor_controller/lib/python3.12/site-packages/competitor_controller:ro
+
+    # A bind mount alone gets EPERM: the container's device cgroup still has to
+    # allow the read. Major 13 is the input subsystem, which is all of js* and
+    # event*, and read-only is all a joystick needs.
+    device_cgroup_rules:
+      - 'c 13:* r'
+
+    # Replaces competitor.launch.py. Only one node may publish
+    # /controller/thruster_forces, so this is a swap and not an addition -
+    # basic_controller does not run in demo mode.
+    command: >
+      ros2 launch competitor_controller gamepad.launch.py
+        device:=${JOY_DEV:-/dev/input/js0}
+        heave_sign:=${DEMO_HEAVE_SIGN:-1.0}
+        cruise_speed:=${DEMO_SPEED:-1.35}

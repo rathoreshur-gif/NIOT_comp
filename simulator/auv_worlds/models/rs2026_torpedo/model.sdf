@@ -9,11 +9,27 @@
       Link pose recenters the model frame on the visible target, so yaw in
       the world file rotates the torpedo about its own vertical axis.
 
-      Visual pose carries R = Rz(π/2)·Rx(π/2) so the mesh appears upright.
+      Visual pose carries R = Rz(π/2)·Rx(π) so the mesh stands upright with
+      its thin axis along local X - the axis the vehicle swims down, and the
+      same swim-through convention the gate uses.
+
+      NOTE on the two meshes. meshes/base_link.STL and meshes/base_link.glb are
+      the same board in DIFFERENT axis conventions: the glb is the STL rotated
+      by Rx(-90°), which is the Y-up convention glTF exporters emit. The visual
+      below loads the GLB, but the pose here was derived from the STL, so the
+      board was rendered lying flat on its back - 1.099 m along X and 0.599 m
+      tall instead of the other way round - while every number in
+      competition_config.yaml assumed it standing. Rx(π) rather than Rx(π/2)
+      is what reconciles the two.
     -->
 
     <link name='base_link'>
-      <pose>0.732111 -0.007367 -0.221432 0 0 0</pose>
+      <!-- Recentres the model frame on the board: with the visual rotation
+           above, the mesh centre sits at (1.0712, 0.1265, -1.6968) in link
+           coordinates, so this is its negation. The old value predated the
+           rotation fix and left the board 2.4 m from its own origin, which is
+           where the config believed it was. -->
+      <pose>-1.071211 -0.126489 1.696842 0 0 0</pose>
 
       <inertial>
         <pose>0.127055 1.073286 1.621449 0 0 1.5708</pose>
@@ -29,7 +45,7 @@
       </inertial>
 
       <visual name='base_link_visual'>
-        <pose>0 0 0 1.5708 0 1.5708</pose>
+        <pose>0 0 0 3.14159 0 1.5708</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>

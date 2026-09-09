@@ -8,6 +8,12 @@
 # is deliberate. /scoring/*, the ground-truth flaggers, the raw /model/auv/*
 # Gazebo topics and the /simulator/* services all stay inside domain 0.
 #
+# The run lifecycle is the one exception, and it is why the last two entries
+# exist: a competitor has to know that it is live and has to be able to end its
+# own run. domain_bridge carries topics and not services, so the Trigger
+# services on run_manager are mirrored by a state topic out and a command topic
+# back in.
+#
 # Mounted read-only into the domain_bridge service, so editing the whitelist
 # needs only `docker compose restart domain_bridge`, not an image rebuild.
 #
@@ -64,13 +70,10 @@ topics:
       history: keep_last
       depth: 1
 
-  /front_camera/oakd_frame:
-    type: auv_msgs/msg/StereoVisionFrame
-    from_domain: 0
-    to_domain: 1
-    qos:
-      history: keep_last
-      depth: 1
+  # NOTE: /front_camera/oakd_frame (StereoVisionFrame) is deliberately NOT
+  # bridged. It carried the same RGB + depth pair as the RGBDFrame below, built
+  # in the same callback, at the cost of a per-pixel Python list conversion.
+  # simulator_bridge now leaves it unpublished unless `publish_stereo_frame:=true`.
 
   /front_camera/rgbd_frame:
     type: auv_msgs/msg/RGBDFrame
@@ -80,6 +83,14 @@ topics:
       history: keep_last
       depth: 1
 
+  # Run lifecycle: IDLE / RUNNING / FINISHED, elapsed, time remaining and the
+  # live score. A controller that ignores this will be publishing thrust into a
+  # kill switch until someone calls start_run.
+  /simulator/run_state:
+    type: auv_msgs/msg/RunState
+    from_domain: 0
+    to_domain: 1
+
   # --- competitor -> simulator -------------------------------------------
 
   # The only thing the competitor is allowed to actuate. simulator_bridge fans
@@ -87,5 +98,14 @@ topics:
   # heave values on the way.
   /controller/thruster_forces:
     type: auv_msgs/msg/ThrusterForces
+    from_domain: 1
+    to_domain: 0
+
+  # The other half of the run lifecycle: "start", "end" or "reset", one word per
+  # message. run_manager runs the same code a Trigger service call would.
+  #
+  #   ros2 topic pub --once /simulator/run_control std_msgs/msg/String "data: start"
+  /simulator/run_control:
+    type: std_msgs/msg/String
     from_domain: 1
     to_domain: 0

@@ -62,6 +62,22 @@ target_link_libraries(AuvTeleop PRIVATE
   Qt5::QuickControls2
 )
 
-install(TARGETS Scoreboard AuvTeleop DESTINATION lib/${PROJECT_NAME})
+# Chase camera. Drives Gazebo's own /gui/follow services rather than touching
+# the render camera itself, so it needs nothing beyond transport and Qt.
+qt5_add_resources(FOLLOWCAM_RCC src/FollowCam.qrc)
+add_library(FollowCam SHARED src/FollowCam.cc ${FOLLOWCAM_RCC})
+target_include_directories(FollowCam PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(FollowCam PRIVATE
+  gz-common::core
+  gz-gui::core
+  gz-msgs::core
+  gz-plugin::register
+  gz-transport::core
+  Qt5::Core
+  Qt5::Quick
+  Qt5::QuickControls2
+)
+
+install(TARGETS Scoreboard AuvTeleop FollowCam DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

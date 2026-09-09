@@ -65,6 +65,12 @@
   <plugin filename="ignition-gazebo-contact-system"
           name="ignition::gazebo::systems::Contact"/>
 
+  <!-- Lets a torpedo be fired. Provides /world/<world>/wrench, which is the
+       only way to impart an impulse to a body from outside the simulation -
+       nothing else in the stack can set a velocity on a detached model. -->
+  <plugin filename="ignition-gazebo-apply-link-wrench-system"
+          name="ignition::gazebo::systems::ApplyLinkWrench"/>
+
   <!-- Graded buoyancy: seawater (1025 kg/m³) below Z=0, air (1.2 kg/m³) above -->
   <plugin filename="ignition-gazebo-buoyancy-system"
           name="ignition::gazebo::systems::Buoyancy">
@@ -171,6 +177,57 @@
         <property type="string" key="state">docked</property>
       </gz-gui>
       <topic>/scoring/display</topic>
+    </plugin>
+
+    <!-- The vehicle's own cameras, in the Gazebo window.
+         ImageDisplay ships with gz-gui, so this needs no code: it subscribes
+         to a gz.msgs.Image topic and draws it. These are the GZ topic names,
+         not the ROS ones the bridge republishes - the panel talks to Gazebo
+         directly, so a competitor's domain and the bridge are not involved.
+         <topic_picker>false</topic_picker> pins each panel to its camera;
+         leave it out and the panel comes up with a drop-down and no feed. -->
+    <plugin filename="ImageDisplay" name="Front camera">
+      <gz-gui>
+        <title>Front camera</title>
+        <property type="bool" key="showTitleBar">true</property>
+        <property type="string" key="state">docked</property>
+      </gz-gui>
+      <topic>/model/auv/front_camera/image</topic>
+      <topic_picker>false</topic_picker>
+    </plugin>
+
+    <plugin filename="ImageDisplay" name="Bottom camera">
+      <gz-gui>
+        <title>Bottom camera</title>
+        <property type="bool" key="showTitleBar">true</property>
+        <property type="string" key="state">docked</property>
+      </gz-gui>
+      <topic>/model/auv/bottom_camera/image</topic>
+      <topic_picker>false</topic_picker>
+    </plugin>
+
+    <!-- Chase camera. Lives in auv_gui beside the Scoreboard and the teleop
+         panel. Gazebo can already follow a model, but it never starts on its
+         own - every session used to open on the world pose above with the
+         vehicle a speck at the far end of the pool. This locks the view behind
+         the vehicle as soon as it is spawned, and the buttons move the camera
+         in and out along that same line.
+
+         The panel only publishes a word; camera_director (launched alongside
+         the flaggers) does the work. It has to be a separate process:
+         /gui/follow is advertised by this GUI, and gz-transport will not route
+         a request from a node back to a service advertised by its own process,
+         so a panel that called the service directly was never answered. The
+         target and the offset are arguments to that script, in the launch
+         file, not properties here. -->
+    <plugin filename="FollowCam" name="FollowCam">
+      <gz-gui>
+        <title>Camera</title>
+        <property type="bool" key="showTitleBar">true</property>
+        <property type="string" key="state">docked</property>
+      </gz-gui>
+      <command_topic>/gui/camera_control</command_topic>
+      <status_topic>/gui/camera_status</status_topic>
     </plugin>
 
   </gui>

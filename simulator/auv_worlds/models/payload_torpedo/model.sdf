@@ -1,0 +1,89 @@
+<sdf version='1.9'>
+  <model name='payload_torpedo'>
+    <link name='payload_link'>
+      <inertial>
+        <!-- Neutrally buoyant. The COLLISION mesh displaces 2.18e-5 m^3,
+             which in the world's 1025 kg/m^3 seawater weighs 0.0223 kg.
+             Lighter than that and a fired torpedo leaves the tube and goes
+             straight up. Buoyancy is computed from collision geometry, and the
+             collision is deliberately still 1x (see below), so this number is
+             unchanged by the 3x visual. -->
+        <mass>0.0223</mass>
+        <inertia><ixx>1.0e-5</ixx><ixy>0</ixy><ixz>0</ixz><iyy>1.0e-5</iyy><iyz>0</iyz><izz>1.0e-5</izz></inertia>
+      </inertial>
+      <!-- BIG TO LOOK AT, NORMAL TO THE PHYSICS. The visual below is drawn
+           at 3x so the torpedo reads from across a room; this collision stays
+           at 1x, and everything the simulation cares about follows the
+           collision - buoyancy volume, contacts, and the clearance through the
+           board's holes. At 3x the collision the torpedo is 72 mm across
+           against a smallest hole of ~97 mm and an off-centre shot clips the
+           rim; at 1x it is the same 24 mm that has always gone cleanly through.
+           Scoring never saw the mesh either way: torpedo_flagger tests the
+           point where this model's ORIGIN crosses the board plane.
+
+           Both poses are the negation of the mesh's authored centre, which is
+           what puts the torpedo on the mount offset the AUV welds it to. That
+           centre scales with the mesh, so each pose is scaled by ITS OWN
+           mesh's factor - 1x here, 3x on the visual. They are meant to differ;
+           making them equal puts the picture and the physics in two different
+           places. -->
+      <collision name='payload_collision'>
+        <pose>-0.6732 1.2666 -0.8614 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://torPEDO/meshes/base_link.STL</uri>
+            <scale>1 1 1</scale>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='payload_visual'>
+        <pose>-2.0196 3.7998 -2.5842 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://torPEDO/meshes/base_link.STL</uri>
+            <scale>3 3 3</scale>
+          </mesh>
+        </geometry>
+        <!-- Orange, and lit rather than merely coloured: pool water is dim and
+             blue-green, which eats the red end of anything shaded only by the
+             scene light. The ambient term is what keeps it orange in the murk
+             at the far end of the pool, and the emissive keeps it readable
+             against the board when a camera is looking straight at it. -->
+        <material>
+          <ambient>1.0 0.35 0.02 1</ambient>
+          <diffuse>1.0 0.45 0.05 1</diffuse>
+          <specular>0.3 0.15 0.05 1</specular>
+          <emissive>0.25 0.08 0.0 1</emissive>
+        </material>
+      </visual>
+    </link>
+
+    <!-- Linear drag, so a fired torpedo coasts to a stop instead of flying on
+         forever. With neutral buoyancy the distance travelled is impulse/|xU|
+         and the mass cancels: 0.134 N.s against 0.0446 gives about 3 m over a
+         ~1.5 s flight. Unaffected by the 3x visual - drag is a coefficient here,
+         not something read off geometry.
+         simulator_bridge.TORPEDO_DRAG must stay equal to xU. -->
+    <plugin filename="ignition-gazebo-hydrodynamics-system"
+            name="ignition::gazebo::systems::Hydrodynamics">
+      <link_name>payload_link</link_name>
+      <xU>-0.0446</xU>
+      <yV>-0.0446</yV>
+      <zW>-0.0446</zW>
+    </plugin>
+
+    <!-- The torpedo's world pose, for the flagger's plane-crossing test.
+         Odometry rather than PosePublisher: PosePublisher reports a link's pose
+         relative to the model that contains it, which for this one-link model
+         is a constant (0, 0, 0). The world's own dynamic_pose/info would do,
+         but it reaches ROS as a PoseArray with the names dropped. -->
+    <plugin filename="ignition-gazebo-odometry-publisher-system"
+            name="ignition::gazebo::systems::OdometryPublisher">
+      <odom_frame>world</odom_frame>
+      <robot_base_frame>payload_link</robot_base_frame>
+      <dimensions>3</dimensions>
+      <odom_publish_frequency>50</odom_publish_frequency>
+      <publish_tf>false</publish_tf>
+    </plugin>
+  </model>
+</sdf>
