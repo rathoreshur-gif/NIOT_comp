@@ -138,6 +138,43 @@ teleop node publishes to the same `/model/auv/joint/*/cmd_thrust` topics as the
 simbridge, at 50 Hz, and freezes position, heading and depth whenever no key is
 held — so left on it silently station-keeps against whatever you are testing.
 
+## What the image installs for Matsya_ROS2
+
+The image has every third-party module a Matsya_ROS2 node imports, so each
+`ros2 run` / `ros2 launch` in that repo starts:
+
+| Package | Needs |
+| --- | --- |
+| `auv_controller` | `simple-pid`, pandas, matplotlib |
+| `auv_navigator` | `ruckig` |
+| `auv_vision` | `ultralytics` + torch (CPU build), `depthai` 3.x, cv_bridge |
+| `auv_drivers` | pyzmq, pyserial, `depthai`, tkinter |
+| `auv_acoustics` | `nidaqmx`, scipy, matplotlib |
+| `auv_map` | pyqtgraph + PyQt5, flask, pandas |
+| `auv_localization`, `auv_mission_control` | numpy, scipy |
+
+The last step of the image build imports all of these. If any is missing,
+`./run.sh test_build` fails right there, not later in someone's `ros2 run`.
+
+The hardware SDKs install and import fine, but they only work with the real
+device: a DAQ needs NI's driver on the host, and an OAK camera needs USB
+passthrough. Their nodes start in the container, then fail when they look for
+the hardware. In the simulator, the camera, IMU and pressure data come from
+the simbridge instead.
+
+The vision stack uses the **CPU** torch wheel, a few hundred MB instead of about
+3 GB for the CUDA build. Two ways to change that:
+
+```bash
+./run.sh test_build --build-arg TEST_VISION_DEPS=false   # leave it out
+./run.sh test_build --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu124
+```
+
+apt's numpy (1.26) is pinned for every pip install through `PIP_CONSTRAINT`,
+including one typed in `test_shell`. rclpy, cv_bridge and the apt
+scipy/opencv are all built against it, and a wheel that pulled in numpy 2
+would break them.
+
 ## When something is missing
 
 The image carries a fixed dependency set. A package added to the workspace
@@ -148,22 +185,16 @@ later may want something it does not have:
 ./run.sh test_pip     # pip install Matsya_ROS2/requirements.txt
 ```
 
-`test_deps` runs with `-r`, so keys it cannot resolve — a bare `ament_python`
-buildtool_depend, a `gz-sim8` that is not a rosdep key — are reported and
-skipped rather than aborting the run and installing nothing. `test_pip` will
-stop on a hardware SDK that has no wheel for this Python; install the rest by
-hand if that happens.
+`test_deps` runs with `-r`, so keys it cannot resolve are reported and skipped.
+Examples are a bare `ament_python` buildtool_depend, or a `gz-sim8` that is not
+a rosdep key. Without `-r`, one of those would abort the run and install
+nothing. `test_pip` will stop on a hardware SDK that has no wheel for this
+Python. If that happens, install the rest by hand.
 
 Both install into the *running* container only, so they are gone after
-`test_down`. Anything permanent belongs in `testing/docker/Dockerfile`,
-followed by `./run.sh test_build`.
-
-The vision stack (ultralytics, and torch behind it) is left out by default
-because it is roughly 3 GB. For a machine that needs it:
-
-```bash
-./run.sh test_build --build-arg TEST_VISION_DEPS=true
-```
+`test_down`. Anything permanent belongs in `testing/docker/Dockerfile`: add the
+package, add it to the import check at the end of that file, then run
+`./run.sh test_build`.
 
 ## Both stacks at once
 

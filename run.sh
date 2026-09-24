@@ -258,7 +258,9 @@ case "$cmd" in
   # nothing at all.
   test_deps)  test_attach_ready
               test_exec bash -c \
-                'rosdep install --ignore-src -y -r --rosdistro jazzy \
+                'apt-get update -qq
+                 [[ -d ~/.ros/rosdep/sources.cache ]] || rosdep update --rosdistro jazzy
+                 rosdep install --ignore-src -y -r --rosdistro jazzy \
                    --from-paths $(/usr/local/bin/build_ws.sh --list-paths)' ;;
 
   # The Python the team's nodes import but never declare. Same caveat: it lives
